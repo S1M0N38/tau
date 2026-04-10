@@ -5,6 +5,16 @@ return {
     cli = {
       win = {
         keys = {
+          ctrl_p = {
+            "<C-p>",
+            function(self)
+              if self:is_running() then
+                vim.api.nvim_chan_send(self.job, "\x1b[112;5u")
+              end
+            end,
+            mode = "t",
+            desc = "CSI-u <C-p>",
+          },
           shift_cr = {
             "<S-CR>",
             function(self)
@@ -13,7 +23,7 @@ return {
               end
             end,
             mode = "t",
-            desc = "CSI-u Shift+Enter",
+            desc = "CSI-u <S-CR>",
           },
           alt_cr = {
             "<A-CR>",
@@ -23,7 +33,7 @@ return {
               end
             end,
             mode = "t",
-            desc = "CSI-u Alt+Enter",
+            desc = "CSI-u <M-CR>",
           },
           stopinsert_esc = {
             "<esc>",
