@@ -81,7 +81,7 @@ return {
       function()
         require("sidekick.cli").sessions()
       end,
-      desc = "Switch tmux session",
+      desc = "Switch sidekick session",
     },
   },
 }
