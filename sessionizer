@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # tau sessionizer — pick a repo in ~/Developer, create or switch tmux session.
+# Sets @type=project and @project=<display-name> on the session so the status
+# bar and cycle-session can identify it as a project session.
 set -euo pipefail
 
 selected=$(find ~/Developer -mindepth 1 -maxdepth 1 -type d -exec basename {} \; \
@@ -10,6 +12,8 @@ path="$HOME/Developer/$selected"
 
 if ! tmux has-session -t="$name" 2>/dev/null; then
   tmux new-session -d -s "$name" -c "$path"
+  tmux set-option -t "$name" @type "project"
+  tmux set-option -t "$name" @project "$selected"
   tmux display-message "Created $name"
 fi
 
