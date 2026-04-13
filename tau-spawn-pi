@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+# tau-spawn-pi — spawn a new pi pane in a grid layout
+#
+# Grid rules:
+#   - Panes spawn side-by-side (horizontal) with equal width
+#   - When adding another pane would make any pane < 80 columns,
+#     new panes spawn below in a new row
+#   - After each spawn, all panes are rearranged into an even grid
+#
+# The layout is applied as a custom tmux layout string (parsed by
+# layout_parse in tmux). Panes are assigned in creation order to
+# grid positions: left-to-right, top-to-bottom.
+#
+# Usage: tau-spawn-pi
+#   (called from tmux key binding, no arguments needed)
+
+set -uo pipefail
+
+MIN_WIDTH=80
+MIN_HEIGHT=10
+
+# If the current pane is idle (just a shell), launch pi directly in it
+# instead of creating a new pane.
+current_pane=$(tmux display-message -p '#{pane_id}')
+current_cmd=$(tmux display-message -p '#{pane_current_command}')
+case "$current_cmd" in
+  *bash*|*zsh*|*sh|fish|dash|ksh|csh|tcsh)
+    tmux send-keys -t "$current_pane" pi Enter
+    exit 0
+    ;;
+esac
+
+# Get window dimensions
+window_width=$(tmux display-message -p '#{window_width}')
+window_height=$(tmux display-message -p '#{window_height}')
+
+# Calculate max columns (each pane must be >= MIN_WIDTH)
+max_cols=$((window_width / MIN_WIDTH))
+[ "$max_cols" -lt 1 ] && max_cols=1
+
+# Count current panes, then simulate adding one more
+current_total=$(tmux list-panes -F '#{pane_id}' | wc -l | tr -d ' ')
+total=$((current_total + 1))
+
+# Calculate grid dimensions after adding the new pane (fill rows first)
+cols=$max_cols
+if [ "$total" -lt "$cols" ]; then
+  cols=$total
+fi
+rows=$(( (total + cols - 1) / cols ))
+
+# Pre-check: would the resulting grid have enough pane height?
+# Width is already bounded by max_cols (window_width / MIN_WIDTH).
+# Height shrinks as rows increase, so check that each row would be
+# tall enough. Account for border rows between panes (1 row each).
+pane_h=$(( (window_height - (rows - 1)) / rows ))
+if [ "$pane_h" -lt "$MIN_HEIGHT" ]; then
+  tmux display-message "⚠ Not enough space to spawn another pane (height ${pane_h} rows < ${MIN_HEIGHT})"
+  exit 1
+fi
+
+# Create the new pane with pi running in it.
+# Split direction doesn't matter — we'll rearrange with a custom layout.
+new_pane=$(tmux split-window -h -P -F '#{pane_id}' -c "#{pane_current_path}" "pi") || {
+  tmux display-message "Failed to spawn pi pane (not enough space?)"
+  exit 0
+}
+
+# Build custom layout string and apply it.
+#
+# Layout string format (from tmux source layout-custom.c):
+#   CSUM,WxH,X,Y{child1,child2,...}   — horizontal group (LAYOUT_LEFTRIGHT)
+#   CSUM,WxH,X,Y[child1,child2,...]   — vertical group (LAYOUT_TOPBOTTOM)
+#   CSUM,WxH,X,Y,PID                  — leaf cell
+#
+# CSUM is a 4-hex-digit checksum. Pane IDs in the string are ignored by
+# layout_assign — panes are mapped depth-first from the window's pane list
+# (creation order). So pane 0 → top-left, newest pane → bottom-right.
+#
+# The tree structure for a grid:
+#   Root (TOPBOTTOM) → rows
+#     Row 0 (LEFTRIGHT) → columns
+#     Row 1 (LEFTRIGHT) → columns
+#     ...
+
+layout_string=$(python3 -c "
+import sys
+
+W, H, cols, rows, total = $window_width, $window_height, $cols, $rows, $total
+
+# Base pane dimensions (borders take 1 column/row each)
+pane_w = (W - (cols - 1)) // cols
+pane_h = (H - (rows - 1)) // rows
+
+def build():
+    # Single pane — just a leaf cell
+    if rows == 1 and cols == 1:
+        return f'{W}x{H},0,0,0'
+
+    # Single row — horizontal group of leaf cells
+    if rows == 1:
+        children = []
+        x = 0
+        for c in range(cols):
+            w = pane_w if c < cols - 1 else W - x
+            children.append(f'{w}x{H},{x},0,0')
+            x += w + 1
+        return f'{W}x{H},0,0{{{\",\".join(children)}}}'
+
+    # Multiple rows — vertical group of row groups
+    row_cells = []
+    y = 0
+    idx = 0
+    for r in range(rows):
+        remaining = total - idx
+        row_cols = min(cols, remaining)
+        h = pane_h if r < rows - 1 else H - y
+
+        if row_cols == 1:
+            row_cells.append(f'{W}x{h},0,{y},0')
+            idx += 1
+        else:
+            children = []
+            x = 0
+            for c in range(row_cols):
+                w = pane_w if c < row_cols - 1 else W - x
+                children.append(f'{w}x{h},{x},{y},0')
+                x += w + 1
+                idx += 1
+            row_cells.append(f'{W}x{h},0,{y}{{{\",\".join(children)}}}')
+        y += h + 1
+
+    return f'{W}x{H},0,0[{\",\".join(row_cells)}]'
+
+tree = build()
+
+# Calculate checksum (from tmux layout_checksum in layout-custom.c):
+#   rotate right by 1, add byte value
+csum = 0
+for ch in tree:
+    csum = (csum >> 1) + ((csum & 1) << 15)
+    csum += ord(ch)
+
+print(f'{csum:04x},{tree}')
+")
+
+# Apply the custom layout (best-effort — don't abort if it fails)
+tmux select-layout "$layout_string" 2>/dev/null || {
+  tmux display-message "Could not apply grid layout (pane spawned anyway)"
+}
+
+# Focus the new pane
+tmux select-pane -t "$new_pane"
