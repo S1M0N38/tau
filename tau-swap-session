@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# tau-swap-session — swap current project session with adjacent project session.
+# Swaps @sort-index between the current session and the prev/next @type=project
+# session. Only considers sessions with @type=project. Clamps at boundaries.
+#
+# Compatible with macOS bash 3.2.
+set -euo pipefail
+
+direction="${1:-next}"
+current="$(tmux display-message -p '#{session_name}')"
+
+tmpfile=$(mktemp)
+trap 'rm -f "$tmpfile"' EXIT
+
+# Collect project sessions with sort-index, assigning defaults from creation order.
+idx=0
+tmux list-sessions -F '#{session_name}|#{@type}|#{@sort-index}' 2>/dev/null | {
+while IFS='|' read -r name type sort_idx; do
+    [ "$type" = "project" ] || continue
+    idx=$((idx + 1))
+    echo "${sort_idx:-$idx}|$name"
+done
+} | sort -t'|' -k1 -n > "$tmpfile"
+
+# Need at least 2 project sessions to swap
+count=$(wc -l < "$tmpfile" | tr -d ' ')
+[ "$count" -lt 2 ] && exit 0
+
+# Find current session's position in sorted list
+found=$(awk -F'|' -v cur="$current" '$2 == cur { print NR; exit }' "$tmpfile")
+[ -z "$found" ] && exit 0
+
+# Calculate target position (clamp at boundaries)
+if [ "$direction" = "next" ]; then
+    target=$((found + 1))
+else
+    target=$((found - 1))
+fi
+[ "$target" -lt 1 ] && exit 0
+[ "$target" -gt "$count" ] && exit 0
+
+# Get session names and sort-indices at found and target positions
+current_name=$(awk -F'|' -v n="$found" 'NR == n { print $2; exit }' "$tmpfile")
+target_name=$(awk -F'|' -v n="$target" 'NR == n { print $2; exit }' "$tmpfile")
+current_sort=$(awk -F'|' -v n="$found" 'NR == n { print $1; exit }' "$tmpfile")
+target_sort=$(awk -F'|' -v n="$target" 'NR == n { print $1; exit }' "$tmpfile")
+
+# Swap sort-indices
+tmux set-option -t "$current_name" @sort-index "$target_sort"
+tmux set-option -t "$target_name" @sort-index "$current_sort"
+
+# Refresh status line to reflect the change
+tmux refresh-client -S
