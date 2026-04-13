@@ -32,12 +32,16 @@ The name is a wordplay on pi (π → τ): tau is 2π, because one pi agent is ne
 
 ```
 tau/
-├── wezterm.lua      # WezTerm config → symlink to ~/.wezterm.lua
-├── tmux.conf        # tmux config    → symlink to ~/.config/tmux/tmux.conf
-├── sidekick.lua     # sidekick.nvim plugin spec → drop into LazyVim config
-├── .editorconfig    # Lua formatting rules for this repo
-├── AGENTS.md        # this file
-└── ROADMAP.md       # future plans (separate file)
+├── wezterm.lua          # WezTerm config → symlink to ~/.wezterm.lua
+├── tmux.conf            # tmux config    → symlink to ~/.config/tmux/tmux.conf
+├── sidekick.lua         # sidekick.nvim plugin spec → drop into LazyVim config
+├── sessionizer          # fzf popup to pick ~/Developer repos → symlink to ~/.local/bin/tau-sessionizer
+├── tau-status-sessions  # status bar: clickable project session list → symlink to ~/.local/bin/tau-status-sessions
+├── tau-cycle-session    # Cmd+Shift+H/L: cycle project sessions → symlink to ~/.local/bin/tau-cycle-session
+├── tau-swap-session     # Super+Shift+Left/Right: reorder project sessions → symlink to ~/.local/bin/tau-swap-session
+├── tau-spawn-pi         # Cmd+A: spawn pi pane in grid layout → symlink to ~/.local/bin/tau-spawn-pi
+├── .editorconfig        # Lua formatting rules for this repo
+└── AGENTS.md            # this file
 ```
 
 All config files are standalone — the user symlinks or copies them to the correct location.
@@ -47,17 +51,30 @@ All config files are standalone — the user symlinks or copies them to the corr
 ### wezterm.lua — WezTerm Configuration
 
 Key settings:
+- **`config.term = "wezterm"`** — sets `$TERM` environment variable
 - **Kitty keyboard protocol** (`enable_kitty_keyboard = true`) — required for pi to detect modifier keys (Shift+Enter, Ctrl+Enter, Alt+Enter)
 - **Tokyo Night Moon** color scheme, **Maple Mono NF** font at 13pt
 - **No tab bar** — tmux handles window/tab management
+- **Zero window padding** — tmux fills the entire terminal with no gaps
+- **macOS window decorations** — `RESIZE | MACOS_FORCE_DISABLE_SHADOW`
+
+Key bindings (all send custom escape sequences to tmux user-keys):
+- **Cmd+H / Cmd+L** → `\x1b[1;9P` / `\x1b[1;9Q` (tmux User0/User1) — cycle windows
+- **Cmd+Shift+H / Cmd+Shift+L** → `\x1b[1;9R` / `\x1b[1;9S` (tmux User2/User3) — cycle project sessions
+- **Cmd+T** → `\x1b[15;9~` (tmux User4) — new window
+- **Cmd+A** → `\x1b[17;9~` (tmux User5) — spawn pi pane in grid layout
+- **Super+Left / Super+Right** → `\x1b[18;9~` / `\x1b[19;9~` (tmux User6/User7) — reorder windows
+- **Super+Shift+Left / Super+Shift+Right** → `\x1b[20;9~` / `\x1b[21;9~` (tmux User8/User9) — reorder sessions
 - **Alt+Enter** CSI-u passthrough — sends `\x1b[13;3u` so tmux forwards the key correctly to pi/sidekick
-- **Ctrl+=/-/Shift variants** disabled to prevent terminal zoom, letting tmux handle those
+- **Ctrl+=/-/Shift variants** disabled (`action.Nop`) to prevent terminal zoom, letting tmux handle those
 
 Target: `~/.wezterm.lua`
 
 ### tmux.conf — tmux Configuration
 
 Optimized for Neovim + pi coexistence:
+
+**Core settings:**
 - **Mouse on**, **base-index 1**, **renumber-windows** — ergonomic defaults
 - **Vi copy mode** — consistent hjkl muscle memory with Neovim
 - **escape-time 10ms** — eliminates lag when pressing Esc in Neovim normal mode
@@ -65,17 +82,56 @@ Optimized for Neovim + pi coexistence:
 - **Cursor shape passthrough** — block/line/beam cursor follows Neovim mode
 - **CSI-u extended keys** (`extended-keys always`, `extended-keys-format csi-u`) — critical for pi's Shift+Enter and Ctrl+Enter keybindings to work through tmux
 - **Terminal features** for xterm* and wezterm* advertise extkey support
-- **Intuitive splits**: `prefix |` (horizontal), `prefix -` (vertical), new pane inherits cwd
+- **`default-terminal "tmux-256color"`** — accurate color rendering inside tmux
+- **`allow-passthrough on`** — lets programs send escape sequences directly to the outer terminal
+
+**Tokyo Night Moon colorscheme** — applied to mode, messages, pane borders, and status bar using true-color hex codes matching WezTerm and Neovim.
+
+**Status bar:**
+- Left: current session name
+- Center: window list with current window highlighted on a blue badge
+- Right: clickable list of project sessions via `tau-status-sessions` (current session gets a blue badge)
+- Active elements use dark text (#1b1d2b) on blue background (#82aaff) with powerline transitions
+
+**Prefix-less key bindings (via WezTerm escape sequences → tmux user-keys):**
+- **Cmd+H / Cmd+L** (User0/User1) — cycle windows
+- **Cmd+Shift+H / Cmd+Shift+L** (User2/User3) — cycle project sessions via `tau-cycle-session`
+- **Cmd+T** (User4) — new window in current directory
+- **Cmd+A** (User5) — spawn pi pane in grid layout via `tau-spawn-pi`
+- **Super+Left / Super+Right** (User6/User7) — reorder windows with `swap-window`
+- **Super+Shift+Left / Super+Shift+Right** (User8/User9) — reorder project sessions via `tau-swap-session`
+
+**Other key bindings:**
+- **Ctrl+h/j/k/l** — seamless Neovim ↔ tmux pane navigation (Navigator.nvim style). When Neovim is focused, the key passes through so Navigator handles it; otherwise tmux selects the pane directly
+- **prefix | / prefix -** — intuitive splits (horizontal/vertical), new pane inherits cwd
+- **prefix r** — reload config
+- **prefix f** — sessionizer popup (fzf to pick ~/Developer repos)
+
+**Hooks:**
+- `client-session-changed` — forces immediate status bar refresh via `refresh-client -S` when switching sessions
 
 Target: `~/.config/tmux/tmux.conf`
 
 ### sidekick.lua — sidekick.nvim Plugin Spec
 
 A LazyVim plugin spec for [sidekick.nvim](https://github.com/folke/sidekick.nvim) configured to work with tau's tmux setup:
-- **tmux mux backend** (`mux.backend = "tmux"`, `mux.enabled = true`) — pi sessions persist in tmux, surviving Neovim restarts
-- **Shift+Enter** CSI-u passthrough — sends `\x1b[13;2u` so pi receives the key correctly when running inside sidekick's terminal
-- **Alt+Enter** CSI-u passthrough — same for `\x1b[13;3u`
-- **Double-tap Esc to exit terminal mode** — single Esc passes through to pi (for normal mode), double-tap exits to Neovim normal mode
+
+**Terminal key passthrough (CSI-u encoding):**
+- **Ctrl+P** — sends `\x1b[112;5u` so pi receives the key correctly
+- **Shift+Enter** — sends `\x1b[13;2u` so pi receives the key correctly
+- **Alt+Enter** — sends `\x1b[13;3u` so pi receives the key correctly
+- **Double-tap Esc to exit terminal mode** — single Esc passes through to pi (for normal mode), double-tap exits to Neovim normal mode (200ms timer)
+
+**tmux mux backend** (`mux.backend = "tmux"`, `mux.enabled = true`) — pi sessions persist in tmux, surviving Neovim restarts
+
+**Leader keybindings (`<leader>a` prefix):**
+- `<leader>ac` — spawn pi
+- `<leader>aC` — select tool
+- `<leader>as` — sessions
+- `<leader>at` — toggle terminal
+- `<leader>ap` — send prompt
+- `<leader>ah` — hide terminal
+- `<leader>aq` — close session
 
 Target: drop into LazyVim's plugin specs directory (e.g., `~/.config/nvim/lua/plugins/sidekick.lua`)
 
@@ -100,10 +156,17 @@ npm install -g @mariozechner/pi-coding-agent
 ln -s ~/Developer/tau/wezterm.lua ~/.wezterm.lua
 ln -s ~/Developer/tau/tmux.conf ~/.config/tmux/tmux.conf
 
-# 3. Drop sidekick.lua into your LazyVim config
+# 3. Symlink scripts
+ln -s ~/Developer/tau/sessionizer ~/.local/bin/tau-sessionizer
+ln -s ~/Developer/tau/tau-status-sessions ~/.local/bin/tau-status-sessions
+ln -s ~/Developer/tau/tau-cycle-session ~/.local/bin/tau-cycle-session
+ln -s ~/Developer/tau/tau-swap-session ~/.local/bin/tau-swap-session
+ln -s ~/Developer/tau/tau-spawn-pi ~/.local/bin/tau-spawn-pi
+
+# 4. Drop sidekick.lua into your LazyVim config
 ln -s ~/Developer/tau/sidekick.lua ~/.config/nvim/lua/plugins/sidekick.lua
 
-# 4. Restart everything (tmux must be fully restarted for extkeys)
+# 5. Restart everything (tmux must be fully restarted for extkeys)
 tmux kill-server
 ```
 
@@ -119,11 +182,82 @@ WezTerm → (kitty keyboard protocol) → tmux → (CSI-u extkeys) → Neovim/si
 - **tmux**: `extended-keys always` + `extended-keys-format csi-u` forwards the sequence unchanged
 - **sidekick.lua**: explicitly sends `\x1b[13;2u` via `nvim_chan_send` since Neovim's terminal may not pass through CSI-u sequences from `<S-CR>` mapping
 
+For prefix-less WezTerm→tmux key bindings, the chain is simpler:
+
+```
+WezTerm → (custom escape sequence) → tmux → (user-key binding) → action
+```
+
+Each WezTerm key binding sends a unique escape sequence that tmux maps to a user-key, which is then bound to an action (window cycling, session cycling, pane spawning, etc.).
+
 ## Editing Conventions
 
 - All Lua files use **2-space indentation**, double quotes, 120 char max line length (see `.editorconfig`)
 - tmux.conf uses **comment blocks** explaining each setting — maintain that style when adding config
 - When adding tmux keybindings, prefer `prefix + single key` over chords
+
+## Session Tagging
+
+Sessions carry tmux user options for identity, grouping, and ordering:
+
+```
+tmux set-option -t <session> @type "<type>"          # project | agent | scratch | ...
+tmux set-option -t <session> @project "<name>"       # display name, groups sessions for same project
+tmux set-option -t <session> @sort-index "<number>"  # sort order in status bar and session cycling
+```
+
+- **`@type`** — what kind of session this is. Currently used values:
+  - `project` — set by `tau-sessionizer` when creating a project session
+  - `agent` — will be set by sidekick.nvim (future) for AI agent sessions
+  - `scratch` — for ad-hoc sessions
+- **`@project`** — display name for the project. Groups sessions belonging to the same project (e.g. a `project` session and its `agent` sessions share the same `@project` value)
+- **`@sort-index`** — numeric sort order used by the status bar (`tau-status-sessions`), session cycling (`tau-cycle-session`), and session reordering (`tau-swap-session`). Falls back to creation order when unset. Swapped by `tau-swap-session` when reordering sessions via Super+Shift+Left/Right.
+- The status bar (`tau-status-sessions`) only shows `@type=project` sessions, sorted by `@sort-index`
+- `Cmd+Shift+H/L` (`tau-cycle-session`) only cycles through `@type=project` sessions in sort order
+- **Important**: use session-scoped options (`set-option -t <session>`) not server-scoped (`set-option -s`) — server scope is global across all sessions
+
+## Scripts
+
+### sessionizer (`tau-sessionizer`)
+
+fzf popup to pick a repo in `~/Developer`. Creates a new tmux session if one doesn't exist, switches to it otherwise. Sets `@type=project` and `@project=<display-name>` on new sessions.
+
+### tau-status-sessions
+
+Generates the status-right content: a clickable list of project sessions. Only shows sessions with `@type=project`, displays `@project` as the label, sorted by `@sort-index` (creation-order fallback). Current session gets a blue highlight badge.
+
+### tau-cycle-session
+
+Cycles through project sessions only (next/prev direction). Only considers sessions with `@type=project`, sorted by `@sort-index`. If the current session is not a project session, jumps to the first one.
+
+### tau-swap-session
+
+Swaps the current project session's `@sort-index` with the previous/next project session. Clamps at boundaries (first/last). Only affects sessions with `@type=project`. Used by Super+Shift+Left/Right to reorder sessions in the status bar.
+
+### tau-spawn-pi
+
+Spawns a new pane running `pi` and rearranges all panes into a grid:
+
+1. If the current pane is an idle shell, launches `pi` directly in it (no new pane)
+2. Calculate `max_cols = window_width / 80` (minimum 80 columns per pane)
+3. Panes fill left-to-right in a row with equal width
+4. When the row is full, the next pane starts a new row below
+5. The grid is applied as a custom tmux layout string via `select-layout`
+
+Example for a 240-column window (`max_cols = 3`):
+- 1 pane: `[    full width    ]`
+- 2 panes: `[  pane 1 | pane 2 ]`
+- 3 panes: `[ p1 | p2 | p3 ]`
+- 4 panes: `[ p1 | p2 | p3 ]` + `[ p4 | ...     ]` below
+- 6 panes: `[ p1 | p2 | p3 ]` + `[ p4 | p5 | p6 ]`
+
+The layout string format uses tmux's internal representation:
+- `{...}` = horizontal group (side-by-side panes)
+- `[...]` = vertical group (stacked rows)
+- Leaf cells: `WxH,X,Y,PID`
+- A 4-hex-digit checksum prefixes the string
+
+Panes are assigned in creation order (oldest → top-left, newest → bottom-right).
 
 ## Things to Watch
 
