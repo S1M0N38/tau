@@ -56,11 +56,6 @@ return {
       mux = {
         backend = "tmux",
         enabled = true,
-        -- Session naming: "tau-pi-1", "tau-pi-2", "tau-claude-1", etc.
-        -- {parent} = current tmux session name (the project)
-        -- {tool} = AI tool name
-        -- {n} = auto-incremented instance number
-        name = "{parent}-{tool}-{n}",
         -- create = "split",
         -- split = {
         --   vertical = true, -- side by side with LazyVim
@@ -70,18 +65,59 @@ return {
     },
   },
   keys = {
+    -- spawn / attach
     {
       "<leader>ac",
       function()
-        require("sidekick.cli").spawn({ name = "pi" })
+        require("sidekick.cli").select({ name = "pi" })
       end,
+      desc = "Spawn pi",
     },
+    {
+      "<leader>aC",
+      function()
+        require("sidekick.cli").select()
+      end,
+      desc = "Select tool",
+    },
+    -- sessions
     {
       "<leader>as",
       function()
         require("sidekick.cli").sessions()
       end,
-      desc = "Switch sidekick session",
+      desc = "Sessions",
+    },
+    -- terminal toggle / focus
+    {
+      "<leader>at",
+      function()
+        require("sidekick.cli").toggle()
+      end,
+      desc = "Toggle terminal",
+    },
+    -- send
+    {
+      "<leader>ap",
+      function()
+        require("sidekick.cli").prompt()
+      end,
+      desc = "Send prompt",
+    },
+    -- hide / close
+    {
+      "<leader>ah",
+      function()
+        require("sidekick.cli").hide()
+      end,
+      desc = "Hide terminal",
+    },
+    {
+      "<leader>aq",
+      function()
+        require("sidekick.cli").close()
+      end,
+      desc = "Close session",
     },
   },
 }
