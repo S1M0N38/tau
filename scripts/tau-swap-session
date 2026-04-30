@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # tau-swap-session — swap current project session with adjacent project session.
-# Swaps @sort-index between the current session and the prev/next @type=project
-# session. Only considers sessions with @type=project. Clamps at boundaries.
+# Swaps the position of the current @type=project session with the prev/next one
+# in the sort order, then reassigns sequential @sort-index values (1, 2, 3, ...)
+# to all project sessions. This prevents sort-index collisions that can arise
+# from swapping raw values.
 #
 # Compatible with macOS bash 3.2.
 set -euo pipefail
@@ -20,7 +22,7 @@ while IFS='|' read -r name type sort_idx; do
     idx=$((idx + 1))
     echo "${sort_idx:-$idx}|$name"
 done
-} | sort -t'|' -k1 -n > "$tmpfile"
+} | sort -t'|' -k1 -n -s > "$tmpfile"
 
 # Need at least 2 project sessions to swap
 count=$(wc -l < "$tmpfile" | tr -d ' ')
@@ -39,15 +41,19 @@ fi
 [ "$target" -lt 1 ] && exit 0
 [ "$target" -gt "$count" ] && exit 0
 
-# Get session names and sort-indices at found and target positions
-current_name=$(awk -F'|' -v n="$found" 'NR == n { print $2; exit }' "$tmpfile")
-target_name=$(awk -F'|' -v n="$target" 'NR == n { print $2; exit }' "$tmpfile")
-current_sort=$(awk -F'|' -v n="$found" 'NR == n { print $1; exit }' "$tmpfile")
-target_sort=$(awk -F'|' -v n="$target" 'NR == n { print $1; exit }' "$tmpfile")
-
-# Swap sort-indices
-tmux set-option -t "$current_name" @sort-index "$target_sort"
-tmux set-option -t "$target_name" @sort-index "$current_sort"
+# Swap the two entries in the tmpfile and reassign sequential sort-indices.
+# awk reads all sessions, swaps the two positions, then outputs with clean
+# sequential indices. This handles both directions (next/prev) correctly.
+awk -F'|' -v found="$found" -v target="$target" 'BEGIN { OFS="|" }
+{ names[NR] = $2 }
+END {
+    tmp = names[found]
+    names[found] = names[target]
+    names[target] = tmp
+    for (i = 1; i <= NR; i++) print i, names[i]
+}' "$tmpfile" | while IFS='|' read -r new_idx name; do
+    tmux set-option -t "$name" @sort-index "$new_idx"
+done
 
 # Refresh status line to reflect the change
 tmux refresh-client -S

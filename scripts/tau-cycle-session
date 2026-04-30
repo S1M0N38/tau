@@ -21,7 +21,7 @@ while IFS='|' read -r name type sort_idx; do
     idx=$((idx + 1))
     echo "${sort_idx:-$idx}|$name"
 done
-} | sort -t'|' -k1 -n | cut -d'|' -f2 > "$tmpfile"
+} | sort -t'|' -k1 -n -s | cut -d'|' -f2 > "$tmpfile"
 
 # Count project sessions
 count=$(wc -l < "$tmpfile" | tr -d ' ')
