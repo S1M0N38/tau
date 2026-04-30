@@ -1,0 +1,14 @@
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+*.secret
+
+# macOS
+.DS_Store
+
+# Editor
+*.swp
+*.swo
+*~
