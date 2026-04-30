@@ -19,9 +19,6 @@ ln -s ~/Developer/tau/scripts/tau-swap-session ~/.local/bin/tau-swap-session
 ln -s ~/Developer/tau/scripts/tau-spawn-pi ~/.local/bin/tau-spawn-pi
 ln -s ~/Developer/tau/scripts/tau-select-session ~/.local/bin/tau-select-session
 
-# Drop sidekick.lua into your LazyVim config
-ln -s ~/Developer/tau/sidekick.lua ~/.config/nvim/lua/plugins/sidekick.lua
-
 # Restart tmux (required for extended-keys to take effect)
 tmux kill-server
 ```
@@ -79,31 +76,6 @@ Split, navigate, and arrange panes.
 | `Cmd + A` | Spawn pi pane and arrange all panes in a grid layout |
 | `Cmd + G` | Open lazygit in a floating popup (90%×90%) |
 
-### Pi / sidekick (inside Neovim terminal)
-
-Keys that reach pi through the WezTerm → tmux → Neovim → pi chain.
-
-| Keymap | Action |
-|--------|--------|
-| `Shift + Enter` | New line in pi (CSI-u passthrough) |
-| `Alt + Enter` | Alternative enter in pi (CSI-u passthrough) |
-| `Ctrl + P` | Ctrl+P in pi (CSI-u passthrough) |
-| `Esc` | Send Esc to pi (single tap) / exit terminal mode (double tap within 200ms) |
-
-### Neovim / sidekick Leader Bindings
-
-Access pi through sidekick.nvim inside Neovim (`<leader>a` prefix).
-
-| Keymap | Action |
-|--------|--------|
-| `<leader>ac` | Spawn pi |
-| `<leader>aC` | Select tool |
-| `<leader>as` | Sessions |
-| `<leader>at` | Toggle terminal |
-| `<leader>ap` | Send prompt |
-| `<leader>ah` | Hide terminal |
-| `<leader>aq` | Close session |
-
 ### Copy Mode
 
 Vi-style keybindings for tmux's scrollback/selection buffer.
@@ -135,10 +107,10 @@ WezTerm → (escape sequence) → tmux → (user-key binding) → action
 
 WezTerm intercepts the native keypress and sends a custom escape sequence. tmux maps each sequence to a numbered user-key (User0–28), which is then bound to an action. This bypasses tmux's prefix entirely for a seamless experience.
 
-For keys that need to reach pi inside Neovim's terminal, the chain is longer:
+For modified keys that need to reach pi (e.g. Shift+Enter, Alt+Enter), the CSI-u chain is:
 
 ```
-WezTerm → (kitty keyboard protocol) → tmux → (CSI-u extkeys) → Neovim/sidekick → pi
+WezTerm → (kitty keyboard protocol) → tmux → (CSI-u extkeys) → pi
 ```
 
 ## Status Bar

@@ -1,6 +1,6 @@
 # Agent Cheat Sheet
 
-**tau** (τ) is a terminal development environment for working with multiple [pi](https://github.com/badlogic/pi-mono) coding agent instances. It layers WezTerm → tmux → Neovim (LazyVim) → [sidekick.nvim](https://github.com/folke/sidekick.nvim) into a coherent workflow where tmux is the persistent orchestration layer.
+**tau** (τ) is a terminal development environment for working with multiple [pi](https://github.com/badlogic/pi-mono) coding agent instances. It layers WezTerm → tmux into a coherent workflow where tmux is the persistent orchestration layer and pi runs directly in tmux panes.
 
 The name is a wordplay on pi (π → τ): tau is 2π, because one pi agent is never enough.
 
@@ -14,19 +14,17 @@ The name is a wordplay on pi (π → τ): tau is 2π, because one pi agent is ne
 │  │  ┌──────────────┐  ┌───────────┐  ┌─────────┐ │ │
 │  │  │ session 1    │  │ session 2 │  │ ...     │ │ │
 │  │  │ project-a    │  │ project-b │  │         │ │ │
-│  │  │ ┌──────────┐ │  │ ┌───────┐ │  │         │ │ │
-│  │  │ │ nvim     │ │  │ │ pi    │ │  │         │ │ │
-│  │  │ │ sidekick │ │  │ │ TUI   │ │  │         │ │ │
-│  │  │ └──────────┘ │  │ └───────┘ │  │         │ │ │
-│  │  └──────────────┘  └───────────┘  └─────────┘ │ │
+│  │  │ ┌────┐┌────┐ │  │ ┌───────┐ │  │         │ │ │
+│  │  │ │nvim││ pi │ │  │ │ pi    │ │  │         │ │ │
+│  │  │ └────┘└────┘ │  │ │ TUI   │ │  │         │ │ │
+│  │  └──────────────┘  │ └───────┘ │  └─────────┘ │ │
 │  └───────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────┘
 ```
 
 - **WezTerm** — renders everything, handles kitty keyboard protocol for reliable modifier keys
 - **tmux** — persistent sessions, one per project; status bar; sessionizer
-- **Neovim + LazyVim** — editor, with sidekick.nvim as the AI integration point
-- **pi** — runs either as a standalone TUI in a tmux pane, or embedded inside Neovim via sidekick's terminal
+- **pi** — runs as a standalone TUI in a tmux pane
 
 ## Project Structure
 
@@ -42,7 +40,6 @@ tau/
 │   ├── tau-swap-session   # reorder project sessions → symlink to ~/.local/bin/tau-swap-session
 │   ├── tau-spawn-pi       # spawn pi pane in grid layout → symlink to ~/.local/bin/tau-spawn-pi
 │   └── tau-select-session # select session by position → symlink to ~/.local/bin/tau-select-session
-├── sidekick.lua           # sidekick.nvim plugin spec → drop into LazyVim config
 ├── .editorconfig          # Lua formatting rules
 └── AGENTS.md              # this file
 ```
@@ -72,7 +69,7 @@ Key bindings:
 - **Cmd+E** → `\x1b[44;9~` (tmux User29) — open editor in floating popup
 - **Super+Left / Super+Right** → `\x1b[18;9~` / `\x1b[19;9~` (tmux User6/User7) — reorder windows
 - **Super+Shift+Left / Super+Shift+Right** → `\x1b[20;9~` / `\x1b[21;9~` (tmux User8/User9) — reorder sessions
-- **Alt+Enter** CSI-u passthrough — sends `\x1b[13;3u` so tmux forwards the key correctly to pi/sidekick
+- **Alt+Enter** CSI-u passthrough — sends `\x1b[13;3u` so tmux forwards the key correctly to pi
 - **Ctrl+=/-/Shift variants** disabled (`action.Nop`) to prevent terminal zoom, letting tmux handle those
 
 Note: Cmd+1-9 and Cmd+Alt+Shift+1-9 use escape sequences \x1b[23;9~ through \x1b[42;9~ mapped to tmux User10-27, since User0-9 are already assigned. Cmd+Alt+Shift is used because Cmd+Shift+number is intercepted by macOS.
@@ -125,38 +122,12 @@ Optimized for Neovim + pi coexistence:
 
 Target: `~/.config/tmux/tmux.conf`
 
-### sidekick.lua — sidekick.nvim Plugin Spec
-
-A LazyVim plugin spec for [sidekick.nvim](https://github.com/folke/sidekick.nvim) configured to work with tau's tmux setup:
-
-**Terminal key passthrough (CSI-u encoding):**
-- **Ctrl+P** — sends `\x1b[112;5u` so pi receives the key correctly
-- **Shift+Enter** — sends `\x1b[13;2u` so pi receives the key correctly
-- **Alt+Enter** — sends `\x1b[13;3u` so pi receives the key correctly
-- **Double-tap Esc to exit terminal mode** — single Esc passes through to pi (for normal mode), double-tap exits to Neovim normal mode (200ms timer)
-
-**tmux mux backend** (`mux.backend = "tmux"`, `mux.enabled = true`) — pi sessions persist in tmux, surviving Neovim restarts
-
-**Leader keybindings (`<leader>a` prefix):**
-- `<leader>ac` — spawn pi
-- `<leader>aC` — select tool
-- `<leader>as` — sessions
-- `<leader>at` — toggle terminal
-- `<leader>ap` — send prompt
-- `<leader>ah` — hide terminal
-- `<leader>aq` — close session
-
-Target: drop into LazyVim's plugin specs directory (e.g., `~/.config/nvim/lua/plugins/sidekick.lua`)
-
 ## Key Dependencies
 
 | Component | Minimum Version |
 |-----------|----------------|
 | WezTerm | latest stable |
 | tmux | 3.6+ |
-| Neovim | 0.12+ |
-| LazyVim | latest |
-| sidekick.nvim | latest |
 | pi | latest |
 
 ## Setup
@@ -177,24 +148,20 @@ ln -s ~/Developer/tau/scripts/tau-swap-session ~/.local/bin/tau-swap-session
 ln -s ~/Developer/tau/scripts/tau-spawn-pi ~/.local/bin/tau-spawn-pi
 ln -s ~/Developer/tau/scripts/tau-select-session ~/.local/bin/tau-select-session
 
-# 4. Drop sidekick.lua into your LazyVim config
-ln -s ~/Developer/tau/sidekick.lua ~/.config/nvim/lua/plugins/sidekick.lua
-
-# 5. Restart everything (tmux must be fully restarted for extkeys)
+# 4. Restart everything (tmux must be fully restarted for extkeys)
 tmux kill-server
 ```
 
 ## How the Key Chain Works
 
-Modified keys must pass through three layers to reach pi. Each layer must be configured:
+Modified keys must pass through two layers to reach pi. Each layer must be configured:
 
 ```
-WezTerm → (kitty keyboard protocol) → tmux → (CSI-u extkeys) → Neovim/sidekick → pi
+WezTerm → (kitty keyboard protocol) → tmux → (CSI-u extkeys) → pi
 ```
 
 - **WezTerm**: `enable_kitty_keyboard = true` encodes Shift+Enter as `\x1b[13;2u`
 - **tmux**: `extended-keys always` + `extended-keys-format csi-u` forwards the sequence unchanged
-- **sidekick.lua**: explicitly sends `\x1b[13;2u` via `nvim_chan_send` since Neovim's terminal may not pass through CSI-u sequences from `<S-CR>` mapping
 
 For prefix-less WezTerm→tmux key bindings, the chain is simpler:
 
@@ -222,7 +189,7 @@ tmux set-option -t <session> @sort-index "<number>"  # sort order in status bar 
 
 - **`@type`** — what kind of session this is. Currently used values:
   - `project` — set by `tau-sessionizer` when creating a project session
-  - `agent` — will be set by sidekick.nvim (future) for AI agent sessions
+  - `agent` — for AI agent sessions
   - `scratch` — for ad-hoc sessions
 - **`@project`** — display name for the project. Groups sessions belonging to the same project (e.g. a `project` session and its `agent` sessions share the same `@project` value)
 - **`@sort-index`** — numeric sort order used by the status bar (`tau-status-sessions`), session cycling (`tau-cycle-session`), and session reordering (`tau-swap-session`). Falls back to creation order when unset. Swapped by `tau-swap-session` when reordering sessions via Super+Shift+Left/Right.
@@ -281,5 +248,4 @@ Panes are assigned in creation order (oldest → top-left, newest → bottom-rig
 
 - **tmux must be fully restarted** (`tmux kill-server`) after changing `extended-keys` settings — reload (`prefix r`) is not enough
 - **WezTerm's Ctrl+=/- bindings** are intentionally disabled (`action.Nop`) to prevent the terminal from intercepting zoom shortcuts that tmux or Neovim may use
-- **sidekick.lua Esc behavior**: the 200ms double-tap timer means a single Esc always goes to pi. If pi responsiveness feels slow, the timer value in `stopinsert_esc` may need tuning
-- **No custom pi CLI for sidekick**: sidekick does not ship a `sk/cli/pi.lua` definition. Pi is launched as a generic terminal inside sidekick — do not add one without checking upstream first
+
