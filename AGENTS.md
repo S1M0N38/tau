@@ -32,16 +32,19 @@ The name is a wordplay on pi (π → τ): tau is 2π, because one pi agent is ne
 
 ```
 tau/
-├── wezterm.lua          # WezTerm config → symlink to ~/.wezterm.lua
-├── tmux.conf            # tmux config    → symlink to ~/.config/tmux/tmux.conf
-├── sidekick.lua         # sidekick.nvim plugin spec → drop into LazyVim config
-├── sessionizer          # fzf popup to pick ~/Developer repos → symlink to ~/.local/bin/tau-sessionizer
-├── tau-status-sessions  # status bar: clickable project session list → symlink to ~/.local/bin/tau-status-sessions
-├── tau-cycle-session    # Cmd+Shift+H/L: cycle project sessions → symlink to ~/.local/bin/tau-cycle-session
-├── tau-swap-session     # Super+Shift+Left/Right: reorder project sessions → symlink to ~/.local/bin/tau-swap-session
-├── tau-spawn-pi         # Cmd+A: spawn pi pane in grid layout → symlink to ~/.local/bin/tau-spawn-pi
-├── .editorconfig        # Lua formatting rules for this repo
-└── AGENTS.md            # this file
+├── config/
+│   ├── wezterm.lua        # WezTerm config → symlink to ~/.config/wezterm/wezterm.lua
+│   └── tmux.conf          # tmux config    → symlink to ~/.config/tmux/tmux.conf
+├── scripts/
+│   ├── tau-sessionizer    # fzf popup to pick ~/Developer repos → symlink to ~/.local/bin/tau-sessionizer
+│   ├── tau-status-sessions  # status bar session list → symlink to ~/.local/bin/tau-status-sessions
+│   ├── tau-cycle-session  # cycle project sessions → symlink to ~/.local/bin/tau-cycle-session
+│   ├── tau-swap-session   # reorder project sessions → symlink to ~/.local/bin/tau-swap-session
+│   ├── tau-spawn-pi       # spawn pi pane in grid layout → symlink to ~/.local/bin/tau-spawn-pi
+│   └── tau-select-session # select session by position → symlink to ~/.local/bin/tau-select-session
+├── sidekick.lua           # sidekick.nvim plugin spec → drop into LazyVim config
+├── .editorconfig          # Lua formatting rules
+└── AGENTS.md              # this file
 ```
 
 All config files are standalone — the user symlinks or copies them to the correct location.
@@ -58,17 +61,23 @@ Key settings:
 - **Zero window padding** — tmux fills the entire terminal with no gaps
 - **macOS window decorations** — `RESIZE | MACOS_FORCE_DISABLE_SHADOW`
 
-Key bindings (all send custom escape sequences to tmux user-keys):
+Key bindings:
 - **Cmd+H / Cmd+L** → `\x1b[1;9P` / `\x1b[1;9Q` (tmux User0/User1) — cycle windows
+- **Cmd+1-9** → `\x1b[23;9~` through `\x1b[33;9~` (tmux User10-18) — select window by number
 - **Cmd+Shift+H / Cmd+Shift+L** → `\x1b[1;9R` / `\x1b[1;9S` (tmux User2/User3) — cycle project sessions
+- **Cmd+Alt+Shift+1-9** → `\x1b[34;9~` through `\x1b[42;9~` (tmux User19-27) — select project session by position in @sort-index order
 - **Cmd+T** → `\x1b[15;9~` (tmux User4) — new window
 - **Cmd+A** → `\x1b[17;9~` (tmux User5) — spawn pi pane in grid layout
+- **Cmd+G** → `\x1b[43;9~` (tmux User28) — open lazygit in floating popup
+- **Cmd+E** → `\x1b[44;9~` (tmux User29) — open editor in floating popup
 - **Super+Left / Super+Right** → `\x1b[18;9~` / `\x1b[19;9~` (tmux User6/User7) — reorder windows
 - **Super+Shift+Left / Super+Shift+Right** → `\x1b[20;9~` / `\x1b[21;9~` (tmux User8/User9) — reorder sessions
 - **Alt+Enter** CSI-u passthrough — sends `\x1b[13;3u` so tmux forwards the key correctly to pi/sidekick
 - **Ctrl+=/-/Shift variants** disabled (`action.Nop`) to prevent terminal zoom, letting tmux handle those
 
-Target: `~/.wezterm.lua`
+Note: Cmd+1-9 and Cmd+Alt+Shift+1-9 use escape sequences \x1b[23;9~ through \x1b[42;9~ mapped to tmux User10-27, since User0-9 are already assigned. Cmd+Alt+Shift is used because Cmd+Shift+number is intercepted by macOS.
+
+Target: `~/.config/wezterm/wezterm.lua`
 
 ### tmux.conf — tmux Configuration
 
@@ -93,11 +102,15 @@ Optimized for Neovim + pi coexistence:
 - Right: clickable list of project sessions via `tau-status-sessions` (current session gets a blue badge)
 - Active elements use dark text (#1b1d2b) on blue background (#82aaff) with powerline transitions
 
-**Prefix-less key bindings (via WezTerm escape sequences → tmux user-keys):**
+**Prefix-less key bindings:**
 - **Cmd+H / Cmd+L** (User0/User1) — cycle windows
+- **Cmd+1-9** (User10-18) — select window by number
 - **Cmd+Shift+H / Cmd+Shift+L** (User2/User3) — cycle project sessions via `tau-cycle-session`
+- **Cmd+Alt+Shift+1-9** (User19-27) — select project session by position via `tau-select-session`
 - **Cmd+T** (User4) — new window in current directory
 - **Cmd+A** (User5) — spawn pi pane in grid layout via `tau-spawn-pi`
+- **Cmd+G** (User28) — open lazygit in a floating popup (90%×90%) in the current pane's working directory
+- **Cmd+E** (User29) — open editor in a floating popup (90%×90%) in the current pane's working directory
 - **Super+Left / Super+Right** (User6/User7) — reorder windows with `swap-window`
 - **Super+Shift+Left / Super+Shift+Right** (User8/User9) — reorder project sessions via `tau-swap-session`
 
@@ -153,15 +166,16 @@ Target: drop into LazyVim's plugin specs directory (e.g., `~/.config/nvim/lua/pl
 npm install -g @mariozechner/pi-coding-agent
 
 # 2. Symlink configs
-ln -s ~/Developer/tau/wezterm.lua ~/.wezterm.lua
-ln -s ~/Developer/tau/tmux.conf ~/.config/tmux/tmux.conf
+ln -s ~/Developer/tau/config/wezterm.lua ~/.config/wezterm/wezterm.lua
+ln -s ~/Developer/tau/config/tmux.conf ~/.config/tmux/tmux.conf
 
 # 3. Symlink scripts
-ln -s ~/Developer/tau/sessionizer ~/.local/bin/tau-sessionizer
-ln -s ~/Developer/tau/tau-status-sessions ~/.local/bin/tau-status-sessions
-ln -s ~/Developer/tau/tau-cycle-session ~/.local/bin/tau-cycle-session
-ln -s ~/Developer/tau/tau-swap-session ~/.local/bin/tau-swap-session
-ln -s ~/Developer/tau/tau-spawn-pi ~/.local/bin/tau-spawn-pi
+ln -s ~/Developer/tau/scripts/tau-sessionizer ~/.local/bin/tau-sessionizer
+ln -s ~/Developer/tau/scripts/tau-status-sessions ~/.local/bin/tau-status-sessions
+ln -s ~/Developer/tau/scripts/tau-cycle-session ~/.local/bin/tau-cycle-session
+ln -s ~/Developer/tau/scripts/tau-swap-session ~/.local/bin/tau-swap-session
+ln -s ~/Developer/tau/scripts/tau-spawn-pi ~/.local/bin/tau-spawn-pi
+ln -s ~/Developer/tau/scripts/tau-select-session ~/.local/bin/tau-select-session
 
 # 4. Drop sidekick.lua into your LazyVim config
 ln -s ~/Developer/tau/sidekick.lua ~/.config/nvim/lua/plugins/sidekick.lua
@@ -218,7 +232,7 @@ tmux set-option -t <session> @sort-index "<number>"  # sort order in status bar 
 
 ## Scripts
 
-### sessionizer (`tau-sessionizer`)
+### tau-sessionizer
 
 fzf popup to pick a repo in `~/Developer`. Creates a new tmux session if one doesn't exist, switches to it otherwise. Sets `@type=project` and `@project=<display-name>` on new sessions.
 
@@ -233,6 +247,10 @@ Cycles through project sessions only (next/prev direction). Only considers sessi
 ### tau-swap-session
 
 Swaps the current project session's `@sort-index` with the previous/next project session. Clamps at boundaries (first/last). Only affects sessions with `@type=project`. Used by Super+Shift+Left/Right to reorder sessions in the status bar.
+
+### tau-select-session
+
+Selects a project session by its 1-based position in the sorted list. Only considers sessions with `@type=project`, sorted by `@sort-index` (creation-order fallback). Silently exits if the index exceeds the number of project sessions. Used by Cmd+Alt+Shift+1-9 to jump directly to a specific project session.
 
 ### tau-spawn-pi
 
