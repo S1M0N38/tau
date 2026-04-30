@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# tau-select-session — select project session by position (1-based index).
+# Only considers sessions with @type=project, sorted by @sort-index.
+# Falls back to creation order when @sort-index is not set.
+#
+# Compatible with macOS bash 3.2 (no associative arrays).
+set -euo pipefail
+
+index="${1:-1}"
+
+# Collect project session names, sorted by @sort-index.
+tmpfile=$(mktemp)
+trap 'rm -f "$tmpfile"' EXIT
+
+idx=0
+tmux list-sessions -F '#{session_name}|#{@type}|#{@sort-index}' 2>/dev/null | {
+while IFS='|' read -r name type sort_idx; do
+    [ "$type" = "project" ] || continue
+    idx=$((idx + 1))
+    echo "${sort_idx:-$idx}|$name"
+done
+} | sort -t'|' -k1 -n | cut -d'|' -f2 > "$tmpfile"
+
+# Check if index is valid
+count=$(wc -l < "$tmpfile" | tr -d ' ')
+[ "$count" -eq 0 ] && exit 0
+[ "$index" -gt "$count" ] && exit 0
+
+# Switch to the target session
+target_name=$(sed -n "${index}p" "$tmpfile")
+tmux switch-client -t "$target_name"
