@@ -7,6 +7,9 @@ The name is a wordplay on pi (π → τ): tau is 2π, because one pi agent is ne
 ## Quick Start
 
 ```bash
+# Install dependencies
+npm install -g @mariozechner/pi-coding-agent
+
 # Symlink configs
 ln -s ~/Developer/tau/config/wezterm.lua ~/.config/wezterm/wezterm.lua
 ln -s ~/Developer/tau/config/tmux.conf ~/.config/tmux/tmux.conf
@@ -18,6 +21,7 @@ ln -s ~/Developer/tau/scripts/tau-cycle-session ~/.local/bin/tau-cycle-session
 ln -s ~/Developer/tau/scripts/tau-swap-session ~/.local/bin/tau-swap-session
 ln -s ~/Developer/tau/scripts/tau-spawn-pi ~/.local/bin/tau-spawn-pi
 ln -s ~/Developer/tau/scripts/tau-select-session ~/.local/bin/tau-select-session
+ln -s ~/Developer/tau/scripts/tau-toggle-editor ~/.local/bin/tau-toggle-editor
 
 # Restart tmux (required for extended-keys to take effect)
 tmux kill-server
@@ -56,7 +60,6 @@ Switch and manage project sessions. Only sessions tagged `@type=project` are con
 |--------|--------|
 | `Cmd + Shift + H` | Previous project session |
 | `Cmd + Shift + L` | Next project session |
-| `Cmd + Alt + Shift + 1` – `Cmd + Alt + Shift + 9` | Jump to project session by position (matches status bar numbering) |
 | `Super + Shift + ←` | Reorder current project session left (swap sort index with previous) |
 | `Super + Shift + →` | Reorder current project session right (swap sort index with next) |
 | `Prefix + F` | Sessionizer — fzf popup to pick/create a project from `~/Developer` |
@@ -75,6 +78,7 @@ Split, navigate, and arrange panes.
 | `Prefix + -` | Vertical split (top/bottom) — inherits cwd |
 | `Cmd + A` | Spawn pi pane and arrange all panes in a grid layout |
 | `Cmd + G` | Open lazygit in a floating popup (90%×90%) |
+| `Cmd + E` | Open editor popup (90%×90%) — LazyVim, close with `:q` |
 
 ### Copy Mode
 
@@ -105,7 +109,7 @@ All prefix-less key bindings follow the same pattern:
 WezTerm → (escape sequence) → tmux → (user-key binding) → action
 ```
 
-WezTerm intercepts the native keypress and sends a custom escape sequence. tmux maps each sequence to a numbered user-key (User0–28), which is then bound to an action. This bypasses tmux's prefix entirely for a seamless experience.
+WezTerm intercepts the native keypress and sends a custom escape sequence. tmux maps each sequence to a numbered user-key (User0–29), which is then bound to an action. This bypasses tmux's prefix entirely for a seamless experience.
 
 For modified keys that need to reach pi (e.g. Shift+Enter, Alt+Enter), the CSI-u chain is:
 
@@ -115,11 +119,10 @@ WezTerm → (kitty keyboard protocol) → tmux → (CSI-u extkeys) → pi
 
 ## Status Bar
 
-The status bar shows three sections:
+The status bar shows two sections:
 
-- **Left** — current session name
-- **Center** — window list (current window highlighted in blue)
-- **Right** — clickable list of project sessions with position numbers matching `Cmd+Alt+Shift+1-9`
+- **Left** — window list (current window highlighted on a blue badge)
+- **Right** — clickable list of project sessions with position numbers and `@project` names, sorted by `@sort-index`
 
 ## Session Tagging
 

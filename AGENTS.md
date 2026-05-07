@@ -39,7 +39,8 @@ tau/
 │   ├── tau-cycle-session  # cycle project sessions → symlink to ~/.local/bin/tau-cycle-session
 │   ├── tau-swap-session   # reorder project sessions → symlink to ~/.local/bin/tau-swap-session
 │   ├── tau-spawn-pi       # spawn pi pane in grid layout → symlink to ~/.local/bin/tau-spawn-pi
-│   └── tau-select-session # select session by position → symlink to ~/.local/bin/tau-select-session
+│   ├── tau-select-session # select session by position → symlink to ~/.local/bin/tau-select-session
+│   └── tau-toggle-editor  # open editor popup → symlink to ~/.local/bin/tau-toggle-editor
 ├── .editorconfig          # Lua formatting rules
 └── AGENTS.md              # this file
 ```
@@ -62,7 +63,6 @@ Key bindings:
 - **Cmd+H / Cmd+L** → `\x1b[1;9P` / `\x1b[1;9Q` (tmux User0/User1) — cycle windows
 - **Cmd+1-9** → `\x1b[23;9~` through `\x1b[33;9~` (tmux User10-18) — select window by number
 - **Cmd+Shift+H / Cmd+Shift+L** → `\x1b[1;9R` / `\x1b[1;9S` (tmux User2/User3) — cycle project sessions
-- **Cmd+Alt+Shift+1-9** → `\x1b[34;9~` through `\x1b[42;9~` (tmux User19-27) — select project session by position in @sort-index order
 - **Cmd+T** → `\x1b[15;9~` (tmux User4) — new window
 - **Cmd+A** → `\x1b[17;9~` (tmux User5) — spawn pi pane in grid layout
 - **Cmd+G** → `\x1b[43;9~` (tmux User28) — open lazygit in floating popup
@@ -72,7 +72,7 @@ Key bindings:
 - **Alt+Enter** CSI-u passthrough — sends `\x1b[13;3u` so tmux forwards the key correctly to pi
 - **Ctrl+=/-/Shift variants** disabled (`action.Nop`) to prevent terminal zoom, letting tmux handle those
 
-Note: Cmd+1-9 and Cmd+Alt+Shift+1-9 use escape sequences \x1b[23;9~ through \x1b[42;9~ mapped to tmux User10-27, since User0-9 are already assigned. Cmd+Alt+Shift is used because Cmd+Shift+number is intercepted by macOS.
+Note: Cmd+1-9 uses escape sequences \x1b[23;9~ through \x1b[33;9~ mapped to tmux User10-18 (skipping \x1b[27;9~ and \x1b[30;9~ which have no standard F-key mapping in xterm's VT key table), since User0-9 are already assigned.
 
 Target: `~/.config/wezterm/wezterm.lua`
 
@@ -94,20 +94,18 @@ Optimized for Neovim + pi coexistence:
 **Tokyo Night Moon colorscheme** — applied to mode, messages, pane borders, and status bar using true-color hex codes matching WezTerm and Neovim.
 
 **Status bar:**
-- Left: current session name
-- Center: window list with current window highlighted on a blue badge
-- Right: clickable list of project sessions via `tau-status-sessions` (current session gets a blue badge)
+- Left: tmux window list — shows window number and name (`#I #W`), current window highlighted on a blue badge
+- Right: clickable list of project sessions via `tau-status-sessions` — shows position number and `@project` name, sorted by `@sort-index`. Current session gets a blue badge. Click to switch.
 - Active elements use dark text (#1b1d2b) on blue background (#82aaff) with powerline transitions
 
 **Prefix-less key bindings:**
 - **Cmd+H / Cmd+L** (User0/User1) — cycle windows
 - **Cmd+1-9** (User10-18) — select window by number
 - **Cmd+Shift+H / Cmd+Shift+L** (User2/User3) — cycle project sessions via `tau-cycle-session`
-- **Cmd+Alt+Shift+1-9** (User19-27) — select project session by position via `tau-select-session`
 - **Cmd+T** (User4) — new window in current directory
 - **Cmd+A** (User5) — spawn pi pane in grid layout via `tau-spawn-pi`
 - **Cmd+G** (User28) — open lazygit in a floating popup (90%×90%) in the current pane's working directory
-- **Cmd+E** (User29) — open editor in a floating popup (90%×90%) in the current pane's working directory
+- **Cmd+E** (User29) — open editor popup (90%×90%) running LazyVim (`env NVIM_APPNAME=lazyvim nvim`). Close with `:q`
 - **Super+Left / Super+Right** (User6/User7) — reorder windows with `swap-window`
 - **Super+Shift+Left / Super+Shift+Right** (User8/User9) — reorder project sessions via `tau-swap-session`
 
@@ -147,6 +145,7 @@ ln -s ~/Developer/tau/scripts/tau-cycle-session ~/.local/bin/tau-cycle-session
 ln -s ~/Developer/tau/scripts/tau-swap-session ~/.local/bin/tau-swap-session
 ln -s ~/Developer/tau/scripts/tau-spawn-pi ~/.local/bin/tau-spawn-pi
 ln -s ~/Developer/tau/scripts/tau-select-session ~/.local/bin/tau-select-session
+ln -s ~/Developer/tau/scripts/tau-toggle-editor ~/.local/bin/tau-toggle-editor
 
 # 4. Restart everything (tmux must be fully restarted for extkeys)
 tmux kill-server
@@ -217,7 +216,7 @@ Swaps the current project session's `@sort-index` with the previous/next project
 
 ### tau-select-session
 
-Selects a project session by its 1-based position in the sorted list. Only considers sessions with `@type=project`, sorted by `@sort-index` (creation-order fallback). Silently exits if the index exceeds the number of project sessions. Used by Cmd+Alt+Shift+1-9 to jump directly to a specific project session.
+Selects a project session by its 1-based position in the sorted list. Only considers sessions with `@type=project`, sorted by `@sort-index` (creation-order fallback). Silently exits if the index exceeds the number of project sessions. Not currently bound to a key — available for manual use or future key binding.
 
 ### tau-spawn-pi
 
@@ -243,6 +242,12 @@ The layout string format uses tmux's internal representation:
 - A 4-hex-digit checksum prefixes the string
 
 Panes are assigned in creation order (oldest → top-left, newest → bottom-right).
+
+### tau-toggle-editor
+
+Convenience wrapper that opens a floating editor popup (LazyVim). The current Cmd+E binding uses `display-popup` directly in tmux.conf (same as Cmd+G for lazygit), so this script is not called by tmux. It remains as a manual-use wrapper.
+
+Behavior: opens a 90%×90% popup running `env NVIM_APPNAME=lazyvim nvim` in the current pane's working directory. Close with `:q` in nvim.
 
 ## Things to Watch
 
