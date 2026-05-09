@@ -48,6 +48,7 @@ That's it. Run `tau` from a plain terminal — it attaches to an existing server
 | WezTerm | latest stable |
 | tmux | 3.6+ |
 | pi | latest |
+| fzf | latest |
 
 Your terminal needs kitty keyboard protocol, true color support, and zero padding. See [terminals/](terminals/) for setup instructions.
 
