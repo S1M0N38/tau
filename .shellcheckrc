@@ -1,0 +1,8 @@
+# shellcheck configuration for tau
+# https://www.shellcheck.net/wiki/Directive
+
+# Allow sourcing via variable paths (e.g. source "$TAU_ROOT/lib/common.sh")
+external-sources=true
+
+# Search lib/ for sourced files
+source-path=lib
