@@ -1,84 +1,119 @@
 # Agent Cheat Sheet
 
-**tau** (τ) is a terminal development environment for working with multiple [pi](https://github.com/badlogic/pi-mono) coding agent instances. It layers WezTerm → tmux into a coherent workflow where tmux is the persistent orchestration layer and pi runs directly in tmux panes.
+**tau** (τ) is a self-contained terminal workspace for [pi](https://github.com/badlogic/pi-mono) coding agents. It runs an isolated tmux server with its own config — no user config files are touched, ever.
 
 The name is a wordplay on pi (π → τ): tau is 2π, because one pi agent is never enough.
 
 ## Architecture
 
 ```
-┌────────────────────────────────────────────────────┐
-│  WezTerm (terminal emulator)                       │
-│  ┌───────────────────────────────────────────────┐ │
-│  │  tmux (session multiplexer)                   │ │
-│  │  ┌──────────────┐  ┌───────────┐  ┌─────────┐ │ │
-│  │  │ session 1    │  │ session 2 │  │ ...     │ │ │
-│  │  │ project-a    │  │ project-b │  │         │ │ │
-│  │  │ ┌────┐┌────┐ │  │ ┌───────┐ │  │         │ │ │
-│  │  │ │nvim││ pi │ │  │ │ pi    │ │  │         │ │ │
-│  │  │ └────┘└────┘ │  │ │ TUI   │ │  │         │ │ │
-│  │  └──────────────┘  │ └───────┘ │  └─────────┘ │ │
-│  └───────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────┘
+User's WezTerm (user's config, untouched)
+└── $ tau                          ← one command
+    └── tmux -L tau -f <config>   ← isolated server, own socket, own config
+        ├── session: project-a
+        │   ├── pane: nvim
+        │   └── pane: pi agent
+        └── session: project-b
+            └── pane: pi agent
 ```
 
+- **`bin/tau`** — single entry point; attaches to existing server or starts a new one
+- **tmux isolation** — `tmux -L tau -f <tau-config>` creates a dedicated server on socket `tau`, independent from any user tmux sessions
 - **WezTerm** — renders everything, handles kitty keyboard protocol for reliable modifier keys
-- **tmux** — persistent sessions, one per project; status bar; sessionizer
 - **pi** — runs as a standalone TUI in a tmux pane
+- **`$TAU_ROOT`** — env var exported by `bin/tau`, inherited by tmux and all child processes; used for path resolution in scripts and config
 
 ## Project Structure
 
 ```
 tau/
-├── config/
-│   ├── wezterm.lua        # WezTerm config → symlink to ~/.config/wezterm/wezterm.lua
-│   └── tmux.conf          # tmux config    → symlink to ~/.config/tmux/tmux.conf
-├── scripts/
-│   ├── tau-sessionizer    # fzf popup to pick ~/Developer repos → symlink to ~/.local/bin/tau-sessionizer
-│   ├── tau-status-sessions  # status bar session list → symlink to ~/.local/bin/tau-status-sessions
-│   ├── tau-cycle-session  # cycle project sessions → symlink to ~/.local/bin/tau-cycle-session
-│   ├── tau-swap-session   # reorder project sessions → symlink to ~/.local/bin/tau-swap-session
-│   ├── tau-spawn-pi       # spawn pi pane in grid layout → symlink to ~/.local/bin/tau-spawn-pi
-│   ├── tau-select-session # select session by position → symlink to ~/.local/bin/tau-select-session
-│   └── tau-toggle-editor  # open editor popup → symlink to ~/.local/bin/tau-toggle-editor
-├── .editorconfig          # Lua formatting rules
-└── AGENTS.md              # this file
+├── bin/                    # Executables
+│   └── tau                 # The command: launch/attach isolated tmux server
+├── lib/                    # Shared shell functions (sourced, not executed)
+│   └── common.sh           # Session listing, sorting, tmux helpers
+├── config/                 # tau's own tmux config (loaded via -f)
+│   └── tmux.conf           # Full tmux config for tau's isolated server
+├── scripts/                # Internal scripts (invoked by tmux keybindings)
+│   ├── tau-sessionizer     # fzf project picker
+│   ├── tau-status-sessions # Status bar session list
+│   ├── tau-cycle-session   # Cycle sessions (Cmd+Shift+H/L)
+│   ├── tau-swap-session    # Reorder sessions (Super+Shift+Left/Right)
+│   └── tau-spawn-pi        # Spawn pi pane in grid layout
+├── terminals/              # Reference configs for terminal emulators
+│   ├── README.md           # "Copy these settings into your terminal config"
+│   └── wezterm.lua         # Required WezTerm settings for tau
+├── .editorconfig
+├── .shellcheckrc
+├── Makefile                # install, uninstall, lint, check targets
+├── AGENTS.md               # this file
+├── CHANGELOG.md
+├── README.md
+└── VERSION                 # Single line: 0.2.0
 ```
 
-All config files are standalone — the user symlinks or copies them to the correct location.
+### Directory purposes
+
+| Directory | What goes here | Who runs it |
+|-----------|---------------|-------------|
+| `bin/` | The `tau` command | User (or PATH) |
+| `lib/` | Shared functions sourced by scripts | Internal |
+| `config/` | tau's tmux config | tmux (via `-f`) |
+| `scripts/` | tmux keybinding targets | tmux (`run-shell`) |
+| `terminals/` | Reference snippets, never executed | User (reads & copies) |
+
+## Installation
+
+Two options — no config files touched, no backups needed:
+
+```bash
+# Option A: Single symlink
+ln -s ~/Developer/tau/bin/tau ~/.local/bin/tau
+
+# Option B: Add to PATH
+echo 'export PATH="$HOME/Developer/tau/bin:$PATH"' >> ~/.bashrc
+```
+
+Or use `make install` / `make uninstall`.
+
+## The `tau` Command
+
+`bin/tau` is a single script that:
+
+1. Exports `TAU_ROOT` (resolved from its own location)
+2. Checks if a tau tmux server exists (`tmux -L tau has-session`)
+3. If yes → `exec tmux -L tau attach`
+4. If no → `exec tmux -L tau -f "$TAU_ROOT/config/tmux.conf" new-session -s scratch`
+
+Guards: exits if already inside tmux (no nested sessions).
+
+## Path Resolution
+
+`bin/tau` resolves and exports `TAU_ROOT`, then `exec`s tmux. tmux inherits the env var and passes it to all `run-shell` scripts and `#(...)` status bar commands.
+
+```bash
+# bin/tau
+export TAU_ROOT
+TAU_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+exec tmux -L tau -f "$TAU_ROOT/config/tmux.conf" new-session -s scratch
+```
+
+```tmux
+# config/tmux.conf — uses $TAU_ROOT directly
+bind-key -n User5 run-shell "$TAU_ROOT/scripts/tau-spawn-pi"
+set -g status-right "#($TAU_ROOT/scripts/tau-status-sessions '#{session_name}')"
+bind r source-file "$TAU_ROOT/config/tmux.conf" \; display-message "Tau config reloaded!"
+```
+
+```bash
+# scripts — $TAU_ROOT is already in the environment
+source "$TAU_ROOT/lib/common.sh"
+```
 
 ## Config Files
 
-### wezterm.lua — WezTerm Configuration
+### config/tmux.conf — tmux Configuration
 
-Key settings:
-- **`config.term = "wezterm"`** — sets `$TERM` environment variable
-- **Kitty keyboard protocol** (`enable_kitty_keyboard = true`) — required for pi to detect modifier keys (Shift+Enter, Ctrl+Enter, Alt+Enter)
-- **Tokyo Night Moon** color scheme, **Maple Mono NF** font at 13pt
-- **No tab bar** — tmux handles window/tab management
-- **Zero window padding** — tmux fills the entire terminal with no gaps
-- **macOS window decorations** — `RESIZE | MACOS_FORCE_DISABLE_SHADOW`
-
-Key bindings:
-- **Cmd+H / Cmd+L** → `\x1b[1;9P` / `\x1b[1;9Q` (tmux User0/User1) — cycle windows
-- **Cmd+1-9** → `\x1b[23;9~` through `\x1b[33;9~` (tmux User10-18) — select window by number
-- **Cmd+Shift+H / Cmd+Shift+L** → `\x1b[1;9R` / `\x1b[1;9S` (tmux User2/User3) — cycle project sessions
-- **Cmd+T** → `\x1b[15;9~` (tmux User4) — new window
-- **Cmd+A** → `\x1b[17;9~` (tmux User5) — spawn pi pane in grid layout
-- **Cmd+G** → `\x1b[43;9~` (tmux User28) — open lazygit in floating popup
-- **Cmd+E** → `\x1b[44;9~` (tmux User29) — open editor in floating popup
-- **Super+Left / Super+Right** → `\x1b[18;9~` / `\x1b[19;9~` (tmux User6/User7) — reorder windows
-- **Super+Shift+Left / Super+Shift+Right** → `\x1b[20;9~` / `\x1b[21;9~` (tmux User8/User9) — reorder sessions
-- **Alt+Enter** CSI-u passthrough — sends `\x1b[13;3u` so tmux forwards the key correctly to pi
-- **Ctrl+=/-/Shift variants** disabled (`action.Nop`) to prevent terminal zoom, letting tmux handle those
-
-Note: Cmd+1-9 uses escape sequences \x1b[23;9~ through \x1b[33;9~ mapped to tmux User10-18 (skipping \x1b[27;9~ and \x1b[30;9~ which have no standard F-key mapping in xterm's VT key table), since User0-9 are already assigned.
-
-Target: `~/.config/wezterm/wezterm.lua`
-
-### tmux.conf — tmux Configuration
-
-Optimized for Neovim + pi coexistence:
+Loaded via `tmux -L tau -f $TAU_ROOT/config/tmux.conf`. Not symlinked to a system path — users edit it in the repo (fork-and-modify workflow).
 
 **Core settings:**
 - **Mouse on**, **base-index 1**, **renumber-windows** — ergonomic defaults
@@ -95,30 +130,32 @@ Optimized for Neovim + pi coexistence:
 
 **Status bar:**
 - Left: tmux window list — shows window number and name (`#I #W`), current window highlighted on a blue badge
-- Right: clickable list of project sessions via `tau-status-sessions` — shows position number and `@project` name, sorted by `@sort-index`. Current session gets a blue badge. Click to switch.
+- Right: clickable list of all tau sessions via `tau-status-sessions` — shows position number and session name, sorted by `@sort-index`. Current session gets a blue badge. Click to switch.
 - Active elements use dark text (#1b1d2b) on blue background (#82aaff) with powerline transitions
 
 **Prefix-less key bindings:**
 - **Cmd+H / Cmd+L** (User0/User1) — cycle windows
 - **Cmd+1-9** (User10-18) — select window by number
-- **Cmd+Shift+H / Cmd+Shift+L** (User2/User3) — cycle project sessions via `tau-cycle-session`
+- **Cmd+Shift+H / Cmd+Shift+L** (User2/User3) — cycle sessions via `tau-cycle-session`
 - **Cmd+T** (User4) — new window in current directory
 - **Cmd+A** (User5) — spawn pi pane in grid layout via `tau-spawn-pi`
 - **Cmd+G** (User28) — open lazygit in a floating popup (90%×90%) in the current pane's working directory
 - **Cmd+E** (User29) — open editor popup (90%×90%) running LazyVim (`env NVIM_APPNAME=lazyvim nvim`). Close with `:q`
 - **Super+Left / Super+Right** (User6/User7) — reorder windows with `swap-window`
-- **Super+Shift+Left / Super+Shift+Right** (User8/User9) — reorder project sessions via `tau-swap-session`
+- **Super+Shift+Left / Super+Shift+Right** (User8/User9) — reorder sessions via `tau-swap-session`
 
 **Other key bindings:**
 - **Ctrl+h/j/k/l** — seamless Neovim ↔ tmux pane navigation (Navigator.nvim style). When Neovim is focused, the key passes through so Navigator handles it; otherwise tmux selects the pane directly
 - **prefix | / prefix -** — intuitive splits (horizontal/vertical), new pane inherits cwd
-- **prefix r** — reload config
+- **prefix r** — reload config from `$TAU_ROOT/config/tmux.conf`
 - **prefix f** — sessionizer popup (fzf to pick ~/Developer repos)
 
 **Hooks:**
 - `client-session-changed` — forces immediate status bar refresh via `refresh-client -S` when switching sessions
 
-Target: `~/.config/tmux/tmux.conf`
+### terminals/ — Terminal Reference Configs
+
+tau does NOT touch the user's terminal emulator config. `terminals/` contains reference snippets users manually copy into their own config. See `terminals/README.md` for required settings.
 
 ## Key Dependencies
 
@@ -127,29 +164,6 @@ Target: `~/.config/tmux/tmux.conf`
 | WezTerm | latest stable |
 | tmux | 3.6+ |
 | pi | latest |
-
-## Setup
-
-```bash
-# 1. Install dependencies
-npm install -g @mariozechner/pi-coding-agent
-
-# 2. Symlink configs
-ln -s ~/Developer/tau/config/wezterm.lua ~/.config/wezterm/wezterm.lua
-ln -s ~/Developer/tau/config/tmux.conf ~/.config/tmux/tmux.conf
-
-# 3. Symlink scripts
-ln -s ~/Developer/tau/scripts/tau-sessionizer ~/.local/bin/tau-sessionizer
-ln -s ~/Developer/tau/scripts/tau-status-sessions ~/.local/bin/tau-status-sessions
-ln -s ~/Developer/tau/scripts/tau-cycle-session ~/.local/bin/tau-cycle-session
-ln -s ~/Developer/tau/scripts/tau-swap-session ~/.local/bin/tau-swap-session
-ln -s ~/Developer/tau/scripts/tau-spawn-pi ~/.local/bin/tau-spawn-pi
-ln -s ~/Developer/tau/scripts/tau-select-session ~/.local/bin/tau-select-session
-ln -s ~/Developer/tau/scripts/tau-toggle-editor ~/.local/bin/tau-toggle-editor
-
-# 4. Restart everything (tmux must be fully restarted for extkeys)
-tmux kill-server
-```
 
 ## How the Key Chain Works
 
@@ -173,54 +187,87 @@ Each WezTerm key binding sends a unique escape sequence that tmux maps to a user
 ## Editing Conventions
 
 - All Lua files use **2-space indentation**, double quotes, 120 char max line length (see `.editorconfig`)
-- tmux.conf uses **comment blocks** explaining each setting — maintain that style when adding config
+- Shell scripts use **2-space indentation** (see `.editorconfig`)
+- tmux.conf uses one-line comments per setting with `# === Section ===` headers — maintain that style
 - When adding tmux keybindings, prefer `prefix + single key` over chords
+- All shell scripts source `lib/common.sh` and use `TAU_SOCKET` constant for tmux calls
 
-## Session Tagging
+## Session Model
 
-Sessions carry tmux user options for identity, grouping, and ordering:
+### Simplified — flat list with one metadata field
+
+Since `-L tau` isolation means every session on the server IS a tau session, no filtering is needed. Sessions have a single metadata field:
+
+| Option | Purpose | Set by | Used by |
+|--------|---------|--------|----------|
+| `@sort-index` | Sort order | `tau-swap-session` (initially unset → creation order) | `tau-status-sessions`, `tau-cycle-session`, `tau-swap-session` |
+
+**Important**: use session-scoped options (`set-option -t <session>`) not server-scoped (`set-option -s`) — server scope is global across all sessions.
+
+### Session lifecycle
 
 ```
-tmux set-option -t <session> @type "<type>"          # project | agent | scratch | ...
-tmux set-option -t <session> @project "<name>"       # display name, groups sessions for same project
-tmux set-option -t <session> @sort-index "<number>"  # sort order in status bar and session cycling
+tau-sessionizer (prefix+f)
+  │
+  ├── fzf picks directory in ~/Developer
+  │
+  ├── session doesn't exist?
+  │   └── tmux -L tau new-session -d -s <name> -c ~/Developer/<dir>
+  │       (no metadata — @sort-index unset, falls back to creation order)
+  │
+  └── tmux -L tau switch-client -t <name>
 ```
 
-- **`@type`** — what kind of session this is. Currently used values:
-  - `project` — set by `tau-sessionizer` when creating a project session
-  - `agent` — for AI agent sessions
-  - `scratch` — for ad-hoc sessions
-- **`@project`** — display name for the project. Groups sessions belonging to the same project (e.g. a `project` session and its `agent` sessions share the same `@project` value)
-- **`@sort-index`** — numeric sort order used by the status bar (`tau-status-sessions`), session cycling (`tau-cycle-session`), and session reordering (`tau-swap-session`). Falls back to creation order when unset. Swapped by `tau-swap-session` when reordering sessions via Super+Shift+Left/Right.
-- The status bar (`tau-status-sessions`) only shows `@type=project` sessions, sorted by `@sort-index`
-- `Cmd+Shift+H/L` (`tau-cycle-session`) only cycles through `@type=project` sessions in sort order
-- **Important**: use session-scoped options (`set-option -t <session>`) not server-scoped (`set-option -s`) — server scope is global across all sessions
+### Session ordering
+
+- **Default**: creation order (no `@sort-index` set → fallback to list-sessions order)
+- **User reorder**: `Super+Shift+Left/Right` → `tau-swap-session` swaps `@sort-index` of adjacent sessions and renumbers all sequentially
+- **Status bar**: `tau-status-sessions` lists all sessions sorted by `@sort-index`
+- **Cycling**: `Cmd+Shift+H/L` → `tau-cycle-session` goes prev/next in sort order
+
+## Shared Library (lib/common.sh)
+
+Sourced by all scripts in `scripts/`. Provides:
+
+```bash
+TAU_SOCKET="tau"                  # Socket name for all tmux -L calls
+
+tau_list_sessions()               # Lists all sessions sorted by @sort-index
+                                   # Output: <sort-index>|<session-name>
+                                   # Falls back to creation order when unset
+
+tau_current_session()             # Returns current session name
+```
 
 ## Scripts
 
+All scripts live in `scripts/` and are invoked by tmux keybindings via `run-shell "$TAU_ROOT/scripts/..."`. All follow the same pattern:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+source "$TAU_ROOT/lib/common.sh"
+```
+
 ### tau-sessionizer
 
-fzf popup to pick a repo in `~/Developer`. Creates a new tmux session if one doesn't exist, switches to it otherwise. Sets `@type=project` and `@project=<display-name>` on new sessions.
+fzf popup to pick a repo in `~/Developer`. Creates a new tmux session on the tau server if one doesn't exist, switches to it otherwise. No metadata set on creation — `@sort-index` stays unset (creation order) until the user reorders.
 
 ### tau-status-sessions
 
-Generates the status-right content: a clickable list of project sessions. Only shows sessions with `@type=project`, displays `@project` as the label, sorted by `@sort-index` (creation-order fallback). Current session gets a blue highlight badge.
+Generates the status-right content: a clickable list of all tau sessions. Displays session name as the label, sorted by `@sort-index` (creation-order fallback). Current session gets a blue highlight badge.
 
 ### tau-cycle-session
 
-Cycles through project sessions only (next/prev direction). Only considers sessions with `@type=project`, sorted by `@sort-index`. If the current session is not a project session, jumps to the first one.
+Cycles through all tau sessions (next/prev direction) in `@sort-index` order. If the current session is not found in the sorted list, jumps to the first one.
 
 ### tau-swap-session
 
-Swaps the current project session's `@sort-index` with the previous/next project session. Clamps at boundaries (first/last). Only affects sessions with `@type=project`. Used by Super+Shift+Left/Right to reorder sessions in the status bar.
-
-### tau-select-session
-
-Selects a project session by its 1-based position in the sorted list. Only considers sessions with `@type=project`, sorted by `@sort-index` (creation-order fallback). Silently exits if the index exceeds the number of project sessions. Not currently bound to a key — available for manual use or future key binding.
+Swaps the current session's `@sort-index` with the previous/next session. Clamps at boundaries (first/last). Renumber all sessions sequentially after swap to prevent index collisions. Used by `Super+Shift+Left/Right`.
 
 ### tau-spawn-pi
 
-Spawns a new pane running `pi` and rearranges all panes into a grid:
+Spawns a new pane running `pi` and rearranges all panes into a grid (pure bash — no Python dependency):
 
 1. If the current pane is an idle shell, launches `pi` directly in it (no new pane)
 2. Calculate `max_cols = window_width / 80` (minimum 80 columns per pane)
@@ -238,19 +285,20 @@ Example for a 240-column window (`max_cols = 3`):
 The layout string format uses tmux's internal representation:
 - `{...}` = horizontal group (side-by-side panes)
 - `[...]` = vertical group (stacked rows)
-- Leaf cells: `WxH,X,Y,PID`
+- Leaf cells: `WxH,X,Y,0`
 - A 4-hex-digit checksum prefixes the string
+
+The checksum algorithm (from tmux source `layout-custom.c`):
+```
+For each character in the layout tree string:
+  csum = rotate-right-1-bit(csum) + byte_value(char)
+Result is the lower 16 bits, formatted as 4 hex digits.
+```
 
 Panes are assigned in creation order (oldest → top-left, newest → bottom-right).
 
-### tau-toggle-editor
-
-Convenience wrapper that opens a floating editor popup (LazyVim). The current Cmd+E binding uses `display-popup` directly in tmux.conf (same as Cmd+G for lazygit), so this script is not called by tmux. It remains as a manual-use wrapper.
-
-Behavior: opens a 90%×90% popup running `env NVIM_APPNAME=lazyvim nvim` in the current pane's working directory. Close with `:q` in nvim.
-
 ## Things to Watch
 
-- **tmux must be fully restarted** (`tmux kill-server`) after changing `extended-keys` settings — reload (`prefix r`) is not enough
+- **tmux must be fully restarted** (`tmux -L tau kill-server`) after changing `extended-keys` settings — reload (`prefix r`) is not enough
 - **WezTerm's Ctrl+=/- bindings** are intentionally disabled (`action.Nop`) to prevent the terminal from intercepting zoom shortcuts that tmux or Neovim may use
-
+- **`$TAU_ROOT` must be set** — all scripts depend on it. Always start tau via `bin/tau`, not by manually running `tmux -L tau`

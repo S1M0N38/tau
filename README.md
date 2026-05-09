@@ -1,31 +1,42 @@
 # tau (τ)
 
-A terminal multiplexer and configuration layer providing **WezTerm + tmux** setup for working with multiple [pi](https://github.com/badlogic/pi-mono) coding agent instances.
+A self-contained terminal workspace for [pi](https://github.com/badlogic/pi-mono) coding agents. One command, zero config files touched.
 
 The name is a wordplay on pi (π → τ): tau is 2π, because one pi agent is never enough.
+
+## How It Works
+
+tau runs an isolated tmux server with its own socket and config — completely independent from any user tmux sessions or terminal emulator settings.
+
+```
+User's WezTerm (user's config, untouched)
+└── $ tau                          ← one command
+    └── tmux -L tau -f <config>   ← isolated server, own socket, own config
+        ├── session: project-a
+        │   ├── pane: nvim
+        │   └── pane: pi agent
+        └── session: project-b
+            └── pane: pi agent
+```
+
+**What tau does NOT touch:** your `~/.config/tmux/`, your `~/.config/wezterm/`, or anything else in `$HOME`. tau's tmux config lives in the repo and is loaded via the `-f` flag. Terminal emulator settings are documented as reference snippets in `terminals/`.
 
 ## Quick Start
 
 ```bash
-# Install dependencies
+# 1. Install dependencies
 npm install -g @mariozechner/pi-coding-agent
 
-# Symlink configs
-ln -s ~/Developer/tau/config/wezterm.lua ~/.config/wezterm/wezterm.lua
-ln -s ~/Developer/tau/config/tmux.conf ~/.config/tmux/tmux.conf
+# 2. Install tau (pick one)
+ln -s ~/Developer/tau/bin/tau ~/.local/bin/tau   # symlink
+# or
+make install                                      # same thing
 
-# Symlink scripts
-ln -s ~/Developer/tau/scripts/tau-sessionizer ~/.local/bin/tau-sessionizer
-ln -s ~/Developer/tau/scripts/tau-status-sessions ~/.local/bin/tau-status-sessions
-ln -s ~/Developer/tau/scripts/tau-cycle-session ~/.local/bin/tau-cycle-session
-ln -s ~/Developer/tau/scripts/tau-swap-session ~/.local/bin/tau-swap-session
-ln -s ~/Developer/tau/scripts/tau-spawn-pi ~/.local/bin/tau-spawn-pi
-ln -s ~/Developer/tau/scripts/tau-select-session ~/.local/bin/tau-select-session
-ln -s ~/Developer/tau/scripts/tau-toggle-editor ~/.local/bin/tau-toggle-editor
-
-# Restart tmux (required for extended-keys to take effect)
-tmux kill-server
+# 3. Start tau
+tau
 ```
+
+That's it. Run `tau` from a plain terminal — it attaches to an existing server or starts a new one.
 
 ## Requirements
 
@@ -35,104 +46,73 @@ tmux kill-server
 | tmux | 3.6+ |
 | pi | latest |
 
----
+Your terminal emulator needs kitty keyboard protocol, true color support, and zero padding. See [terminals/](terminals/) for setup instructions.
 
-## Keymaps
+## Installation
+
+### Option A: Single symlink
+
+```bash
+git clone https://github.com/user/tau.git ~/Developer/tau
+ln -s ~/Developer/tau/bin/tau ~/.local/bin/tau
+```
+
+### Option B: Add to PATH
+
+```bash
+git clone https://github.com/user/tau.git ~/Developer/tau
+echo 'export PATH="$HOME/Developer/tau/bin:$PATH"' >> ~/.bashrc
+```
+
+### Uninstall
+
+```bash
+rm ~/.local/bin/tau   # if symlinked
+tmux -L tau kill-server  # stop the server
+```
+
+## Key Bindings
 
 ### Window Management
 
-Navigate and manage tmux windows within the current session.
-
-| Keymap | Action |
-|--------|--------|
-| `Cmd + H` | Previous window |
-| `Cmd + L` | Next window |
-| `Cmd + 1` – `Cmd + 9` | Jump to window by number |
-| `Cmd + T` | New window (inherits cwd) |
-| `Super + ←` | Move window left (swap with previous) |
-| `Super + →` | Move window right (swap with next) |
+| Key | Action |
+|-----|--------|
+| `Cmd+H` / `Cmd+L` | Previous / next window |
+| `Cmd+1` – `Cmd+9` | Jump to window by number |
+| `Cmd+T` | New window (inherits cwd) |
+| `Super+←` / `Super+→` | Move window left / right |
 
 ### Session Management
 
-Switch and manage project sessions. Only sessions tagged `@type=project` are considered — agent, scratch, and other session types are skipped.
-
-| Keymap | Action |
-|--------|--------|
-| `Cmd + Shift + H` | Previous project session |
-| `Cmd + Shift + L` | Next project session |
-| `Super + Shift + ←` | Reorder current project session left (swap sort index with previous) |
-| `Super + Shift + →` | Reorder current project session right (swap sort index with next) |
-| `Prefix + F` | Sessionizer — fzf popup to pick/create a project from `~/Developer` |
+| Key | Action |
+|-----|--------|
+| `Cmd+Shift+H` / `Cmd+Shift+L` | Previous / next session |
+| `Super+Shift+←` / `Super+Shift+→` | Reorder session left / right |
+| `Prefix+f` | Sessionizer — fzf popup to pick/create a project from `~/Developer` |
 
 ### Pane Management
 
-Split, navigate, and arrange panes.
-
-| Keymap | Action |
-|--------|--------|
-| `Ctrl + H` | Move to left pane (Neovim-aware: passes through to splits first) |
-| `Ctrl + J` | Move to bottom pane (Neovim-aware) |
-| `Ctrl + K` | Move to top pane (Neovim-aware) |
-| `Ctrl + L` | Move to right pane (Neovim-aware) |
-| `Prefix + \|` | Horizontal split (side by side) — inherits cwd |
-| `Prefix + -` | Vertical split (top/bottom) — inherits cwd |
-| `Cmd + A` | Spawn pi pane and arrange all panes in a grid layout |
-| `Cmd + G` | Open lazygit in a floating popup (90%×90%) |
-| `Cmd + E` | Open editor popup (90%×90%) — LazyVim, close with `:q` |
-
-### Copy Mode
-
-Vi-style keybindings for tmux's scrollback/selection buffer.
-
-| Keymap | Action |
-|--------|--------|
-| `Prefix + [` | Enter copy mode |
-| `v` | Begin character-wise selection |
-| `V` | Begin line-wise selection |
-| `y` | Yank selection to system clipboard |
-| `Esc` | Cancel selection |
+| Key | Action |
+|-----|--------|
+| `Ctrl+H` / `Ctrl+J` / `Ctrl+K` / `Ctrl+L` | Navigate panes (Neovim-aware) |
+| `Prefix+|` | Horizontal split — inherits cwd |
+| `Prefix+-` | Vertical split — inherits cwd |
+| `Cmd+A` | Spawn pi pane in grid layout |
+| `Cmd+G` | Open lazygit in floating popup |
+| `Cmd+E` | Open LazyVim in floating popup |
 
 ### Miscellaneous
 
-| Keymap | Action |
-|--------|--------|
-| `Prefix + R` | Reload tmux config |
-| `Ctrl + =` / `Ctrl + -` | Disabled (Nop) — prevents WezTerm zoom so tmux/Neovim can handle them |
+| Key | Action |
+|-----|--------|
+| `Prefix+r` | Reload tau config |
+| `Prefix+[` | Enter copy mode (vi keys: `v` select, `V` line, `y` yank) |
 
----
+## Customization
 
-## How It Works
+tau's config lives at `config/tmux.conf` in the repo. Edit it directly — fork-and-modify workflow. No symlinks, no overlays, no backup/restore.
 
-All prefix-less key bindings follow the same pattern:
-
-```
-WezTerm → (escape sequence) → tmux → (user-key binding) → action
-```
-
-WezTerm intercepts the native keypress and sends a custom escape sequence. tmux maps each sequence to a numbered user-key (User0–29), which is then bound to an action. This bypasses tmux's prefix entirely for a seamless experience.
-
-For modified keys that need to reach pi (e.g. Shift+Enter, Alt+Enter), the CSI-u chain is:
-
-```
-WezTerm → (kitty keyboard protocol) → tmux → (CSI-u extkeys) → pi
-```
-
-## Status Bar
-
-The status bar shows two sections:
-
-- **Left** — window list (current window highlighted on a blue badge)
-- **Right** — clickable list of project sessions with position numbers and `@project` names, sorted by `@sort-index`
-
-## Session Tagging
-
-Sessions use tmux user options for identity and ordering:
-
-```bash
-tmux set-option -t <session> @type "project"       # session type: project | agent | scratch
-tmux set-option -t <session> @project "my-app"      # display name (groups related sessions)
-tmux set-option -t <session> @sort-index "2"        # sort order in status bar and cycling
-```
+Terminal emulator settings are in `terminals/` as reference snippets. Copy what you need into your own config.
 
 ## Theme
 
