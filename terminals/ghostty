@@ -1,0 +1,67 @@
+# tau terminal settings for Ghostty
+# Copy this into your Ghostty config (~/.config/ghostty/config)
+
+# Required for tau
+# Ghostty supports the kitty keyboard protocol by default — no configuration needed.
+# pi's Shift+Enter, Ctrl+Enter, Alt+Enter work out of the box.
+window-padding-x = 0
+window-padding-y = 0
+
+# Recommended for tau
+theme = Tokyo Night Moon
+font-family = Maple Mono NF
+font-size = 13
+window-decoration = false
+macos-option-as-alt = true
+
+# ═══════════════════════════════════════════════════════════════════════
+# Key bindings: Ghostty → tmux escape sequences
+#
+# Each binding sends a unique escape sequence that tmux maps to a
+# user-key, which is then bound to an action. This is how prefix-less
+# keybindings work through the Ghostty → tmux → pi chain.
+#
+# Ghostty supports the super (cmd) modifier on macOS.
+# ═══════════════════════════════════════════════════════════════════════
+
+# ── Window navigation ──────────────────────────────────────────────
+# Super+H / Super+L → tmux user-keys (User0 / User1) — cycle windows
+keybind = super+h=text:\x1b[1;9P
+keybind = super+l=text:\x1b[1;9Q
+# Super+1-9 → tmux user-keys (User10-18) — select window by number
+keybind = super+1=text:\x1b[23;9~
+keybind = super+2=text:\x1b[24;9~
+keybind = super+3=text:\x1b[25;9~
+keybind = super+4=text:\x1b[26;9~
+keybind = super+5=text:\x1b[28;9~
+keybind = super+6=text:\x1b[29;9~
+keybind = super+7=text:\x1b[31;9~
+keybind = super+8=text:\x1b[32;9~
+keybind = super+9=text:\x1b[33;9~
+
+# ── Session navigation ─────────────────────────────────────────────
+# Super+Shift+H / Super+Shift+L → tmux user-keys (User2 / User3) — cycle sessions
+keybind = super+shift+h=text:\x1b[1;9R
+keybind = super+shift+l=text:\x1b[1;9S
+
+# ── Window/session reordering ───────────────────────────────────────
+# Super+Left / Super+Right → tmux user-keys (User6 / User7) — reorder windows
+keybind = super+left=text:\x1b[18;9~
+keybind = super+right=text:\x1b[19;9~
+# Super+Shift+Left / Super+Shift+Right → tmux user-keys (User8 / User9) — reorder sessions
+keybind = super+shift+left=text:\x1b[20;9~
+keybind = super+shift+right=text:\x1b[21;9~
+
+# ── Actions ─────────────────────────────────────────────────────────
+# Super+T → tmux user-key (User4) — new window in current directory
+keybind = super+t=text:\x1b[15;9~
+# Super+A → tmux user-key (User5) — spawn pi pane in grid layout
+keybind = super+a=text:\x1b[17;9~
+# Super+G → tmux user-key (User28) — lazygit floating popup
+keybind = super+g=text:\x1b[43;9~
+# Super+E → tmux user-key (User29) — editor floating popup (LazyVim)
+keybind = super+e=text:\x1b[44;9~
+
+# ── Pass-through ────────────────────────────────────────────────────
+# Alt+Enter passthrough (for pi and other TUI tools)
+keybind = alt+enter=text:\x1b[13;3u
