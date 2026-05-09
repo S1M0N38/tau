@@ -47,8 +47,7 @@ tau/
 ├── Makefile                # install, uninstall, lint, check targets
 ├── AGENTS.md               # this file
 ├── CHANGELOG.md
-├── README.md
-└── VERSION                 # Single line: 0.2.0
+└── README.md
 ```
 
 ### Directory purposes
