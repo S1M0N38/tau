@@ -89,6 +89,50 @@ Your terminal needs kitty keyboard protocol, true color support, and zero paddin
 | `Prefix+r` | Reload tau config |
 | `Prefix+[` | Enter copy mode (vi keys: `v` select, `V` line, `y` yank) |
 
+<details>
+<summary><strong>Navigator.nvim</strong> — seamless Ctrl+H/J/K/L pane navigation</summary>
+
+tau's <code>Ctrl+H/J/K/L</code> key bindings are Neovim-aware: when Neovim is focused, the key passes through so a navigator plugin can handle it; otherwise tmux selects the pane directly. To enable this in Neovim, install [Navigator.nvim](https://github.com/numToStr/Navigator.nvim).
+
+With [lazy.nvim](https://lazy.folke.io), save this as <code>~/.config/nvim/lua/plugins/navigator.lua</code>:
+
+```lua
+return {
+  "numToStr/Navigator.nvim",
+  opts = {},
+  keys = {
+    {
+      "<c-h>",
+      "<CMD>NavigatorLeft<CR>",
+      mode = { "n", "t" },
+      desc = "Move to the left",
+    },
+    {
+      "<c-j>",
+      "<CMD>NavigatorDown<CR>",
+      mode = { "n", "t" },
+      desc = "Move to the down",
+    },
+    {
+      "<c-k>",
+      "<CMD>NavigatorUp<CR>",
+      mode = { "n", "t" },
+      desc = "Move to the up",
+    },
+    {
+      "<c-l>",
+      "<CMD>NavigatorRight<CR>",
+      mode = { "n", "t" },
+      desc = "Move to the right",
+    },
+  },
+}
+```
+
+This gives you seamless <code>Ctrl+H/J/K/L</code> movement across Neovim splits <em>and</em> tmux panes with zero friction.
+
+</details>
+
 ## Customization
 
 Edit `config/tmux.conf` in the repo directly. No symlinks, no overlays, no backup/restore. Terminal emulator settings are in `terminals/` as reference snippets — copy what you need into your own config.
