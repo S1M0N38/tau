@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # lib/common.sh — shared functions for tau scripts
 
-TAU_SOCKET="tau"
+TAU_SOCKET="${TAU_SOCKET:-tau}"
 
 # Output: <sort-index>|<session-name> (creation-order fallback when @sort-index unset)
 tau_list_sessions() {
