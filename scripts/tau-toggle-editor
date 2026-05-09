@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-# tau-toggle-editor — open a floating editor popup (LazyVim)
-#
-# Opens LazyVim (nvim with NVIM_APPNAME=lazyvim) in a 90%×90% floating popup.
-# Close with :q in nvim.
-set -euo pipefail
-cwd="$(tmux display-message -p '#{pane_current_path}')"
-tmux display-popup -w 90% -h 90% -d "$cwd" -E "env NVIM_APPNAME=lazyvim nvim"

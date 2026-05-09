@@ -1,28 +1,21 @@
 #!/usr/bin/env bash
-# tau status-right sessions — clickable project session list.
-# Only shows sessions with @type=project. Displays @project as the label.
-# Sorted by @sort-index (falls back to creation order when unset).
-#
-# Compatible with macOS bash 3.2.
+# tau-status-sessions — clickable session list for status-right
+# Usage: tau-status-sessions <current-session-name>
+set -euo pipefail
+
+source "${TAU_ROOT}/lib/common.sh"
 
 current="$1"
 
-# Collect, sort by @sort-index (creation-order fallback), then display.
-tmux list-sessions -F '#{session_name}|#{@type}|#{@project}|#{@sort-index}' 2>/dev/null | {
+# Sort by @sort-index (creation-order fallback), then display.
+tau_list_sessions | {
 idx=0
-while IFS='|' read -r name type project sort_idx; do
-    [ "$type" = "project" ] || continue
-    idx=$((idx + 1))
-    echo "${sort_idx:-$idx}|$name|$project"
-done
-} | sort -t'|' -k1 -n -s | {
-idx=0
-while IFS='|' read -r _ name project; do
+while IFS='|' read -r _ name; do
     idx=$((idx + 1))
     if [ "$name" = "$current" ]; then
-        printf '#[fg=#1e2030,bg=#82aaff]#[fg=#1b1d2b,bg=#82aaff,bold] %d %s #[fg=#82aaff,bg=#1e2030]' "$idx" "$project"
+        printf '#[fg=#1e2030,bg=#82aaff]#[fg=#1b1d2b,bg=#82aaff,bold] %d %s #[fg=#82aaff,bg=#1e2030]' "$idx" "$name"
     else
-        printf '#[fg=#828bb8,bg=#1e2030,click=switch-client -t %s] %d %s ' "$name" "$idx" "$project"
+        printf '#[fg=#828bb8,bg=#1e2030,click=switch-client -t %s] %d %s ' "$name" "$idx" "$name"
     fi
 done
 }

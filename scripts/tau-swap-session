@@ -1,30 +1,20 @@
 #!/usr/bin/env bash
-# tau-swap-session — swap current project session with adjacent project session.
-# Swaps the position of the current @type=project session with the prev/next one
-# in the sort order, then reassigns sequential @sort-index values (1, 2, 3, ...)
-# to all project sessions. This prevents sort-index collisions that can arise
-# from swapping raw values.
-#
-# Compatible with macOS bash 3.2.
+# tau-swap-session — swap current session with adjacent, renumber all
+# Usage: tau-swap-session <next|prev>
 set -euo pipefail
 
+source "${TAU_ROOT}/lib/common.sh"
+
 direction="${1:-next}"
-current="$(tmux display-message -p '#{session_name}')"
+current="$(tau_current_session)"
 
 tmpfile=$(mktemp)
 trap 'rm -f "$tmpfile"' EXIT
 
-# Collect project sessions with sort-index, assigning defaults from creation order.
-idx=0
-tmux list-sessions -F '#{session_name}|#{@type}|#{@sort-index}' 2>/dev/null | {
-while IFS='|' read -r name type sort_idx; do
-    [ "$type" = "project" ] || continue
-    idx=$((idx + 1))
-    echo "${sort_idx:-$idx}|$name"
-done
-} | sort -t'|' -k1 -n -s > "$tmpfile"
+# Collect all sessions sorted by @sort-index
+tau_list_sessions > "$tmpfile"
 
-# Need at least 2 project sessions to swap
+# Need at least 2 sessions to swap
 count=$(wc -l < "$tmpfile" | tr -d ' ')
 [ "$count" -lt 2 ] && exit 0
 
@@ -41,9 +31,9 @@ fi
 [ "$target" -lt 1 ] && exit 0
 [ "$target" -gt "$count" ] && exit 0
 
-# Swap the two entries in the tmpfile and reassign sequential sort-indices.
+# Swap the two entries and reassign sequential sort-indices.
 # awk reads all sessions, swaps the two positions, then outputs with clean
-# sequential indices. This handles both directions (next/prev) correctly.
+# sequential indices.
 awk -F'|' -v found="$found" -v target="$target" 'BEGIN { OFS="|" }
 { names[NR] = $2 }
 END {
@@ -52,8 +42,8 @@ END {
     names[target] = tmp
     for (i = 1; i <= NR; i++) print i, names[i]
 }' "$tmpfile" | while IFS='|' read -r new_idx name; do
-    tmux set-option -t "$name" @sort-index "$new_idx"
+    tmux -L "$TAU_SOCKET" set-option -t "$name" @sort-index "$new_idx"
 done
 
 # Refresh status line to reflect the change
-tmux refresh-client -S
+tmux -L "$TAU_SOCKET" refresh-client -S

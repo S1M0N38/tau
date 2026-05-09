@@ -1,36 +1,27 @@
 #!/usr/bin/env bash
-# tau-cycle-session — cycle through project sessions only (next|prev).
-# Only considers sessions with @type=project. All other session types are
-# skipped (agent, scratch, etc.).
-#
-# Compatible with macOS bash 3.2 (no associative arrays).
+# tau-cycle-session — cycle sessions in @sort-index order
+# Usage: tau-cycle-session <next|prev>
 set -euo pipefail
 
-direction="${1:-next}"
-current="$(tmux display-message -p '#{session_name}')"
+source "${TAU_ROOT}/lib/common.sh"
 
-# Collect project session names into a temp file, sorted by @sort-index.
-# Falls back to creation order when @sort-index is not set.
+direction="${1:-next}"
+current="$(tau_current_session)"
+
+# Collect session names sorted by @sort-index into a temp file.
 tmpfile=$(mktemp)
 trap 'rm -f "$tmpfile"' EXIT
 
-idx=0
-tmux list-sessions -F '#{session_name}|#{@type}|#{@sort-index}' 2>/dev/null | {
-while IFS='|' read -r name type sort_idx; do
-    [ "$type" = "project" ] || continue
-    idx=$((idx + 1))
-    echo "${sort_idx:-$idx}|$name"
-done
-} | sort -t'|' -k1 -n -s | cut -d'|' -f2 > "$tmpfile"
+tau_list_sessions | cut -d'|' -f2 > "$tmpfile"
 
-# Count project sessions
+# Count sessions
 count=$(wc -l < "$tmpfile" | tr -d ' ')
 [ "$count" -eq 0 ] && exit 0
 
-# Find current session's index
-found=$(awk -v cur="$current" -F'|' '$0 == cur { print NR; exit }' "$tmpfile")
+# Find current session's position
+found=$(awk -v cur="$current" '$0 == cur { print NR; exit }' "$tmpfile")
 
-# If current session is not a project session, go to the first one
+# If current session is not found, go to the first one
 if [ -z "$found" ]; then
     target=1
 elif [ "$direction" = "next" ]; then
@@ -45,4 +36,4 @@ fi
 
 # Switch to the target session
 target_name=$(sed -n "${target}p" "$tmpfile")
-tmux switch-client -t "$target_name"
+tmux -L "$TAU_SOCKET" switch-client -t "$target_name"

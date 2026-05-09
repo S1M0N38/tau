@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# tau sessionizer — pick a repo in ~/Developer, create or switch tmux session.
-# Sets @type=project and @project=<display-name> on the session so the status
-# bar and cycle-session can identify it as a project session.
+# tau-sessionizer — pick a repo in ~/Developer, create or switch session
 set -euo pipefail
+
+source "${TAU_ROOT}/lib/common.sh"
 
 selected=$(find ~/Developer -mindepth 1 -maxdepth 1 -type d -exec basename {} \; \
   | fzf --reverse --height=~40% --no-mouse --prompt="session> ") || exit 0
@@ -10,11 +10,9 @@ selected=$(find ~/Developer -mindepth 1 -maxdepth 1 -type d -exec basename {} \;
 name=$(echo "$selected" | tr ' .:' '-' | tr '[:upper:]' '[:lower:]')
 path="$HOME/Developer/$selected"
 
-if ! tmux has-session -t="$name" 2>/dev/null; then
-  tmux new-session -d -s "$name" -c "$path"
-  tmux set-option -t "$name" @type "project"
-  tmux set-option -t "$name" @project "$selected"
-  tmux display-message "Created $name"
+if ! tmux -L "$TAU_SOCKET" has-session -t="$name" 2>/dev/null; then
+  tmux -L "$TAU_SOCKET" new-session -d -s "$name" -c "$path"
+  tmux -L "$TAU_SOCKET" display-message "Created $name"
 fi
 
-tmux switch-client -t "$name"
+tmux -L "$TAU_SOCKET" switch-client -t "$name"
