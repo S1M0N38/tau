@@ -10,7 +10,8 @@ if [ -n "${TMUX:-}" ]; then
 fi
 
 export TAU_ROOT
-TAU_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+_self="$(readlink -f "$0")"
+TAU_ROOT="$(cd "$(dirname "$_self")/.." && pwd)"
 
 TAU_SOCKET="tau"
 TAU_CONFIG="$TAU_ROOT/config/tmux.conf"
