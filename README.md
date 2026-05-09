@@ -1,12 +1,16 @@
-# tau (τ)
+<div align="center">
+  <h1>τ</h1>
+  <p><em>double your π</em></p>
+  <hr>
+</div>
 
-A self-contained terminal workspace for [pi](https://github.com/badlogic/pi-mono) coding agents. One command, zero config files touched.
+## Philosophy
 
-The name is a wordplay on pi (π → τ): tau is 2π, because one pi agent is never enough.
+One agent is never enough. A single pi session is powerful — but real work means juggling projects, switching contexts, keeping multiple conversations alive. tau gives each project its own session, each agent its own pane, and lets you move between them without friction.
+
+tau doesn't touch your config. No dotfile surgery, no backup rituals, no "let me restore my tmux after this." It runs an isolated tmux server with its own socket and its own config — completely independent from anything else on your system. Start it, use it, kill it. Your setup stays pristine.
 
 ## How It Works
-
-tau runs an isolated tmux server with its own socket and config — completely independent from any user tmux sessions or terminal emulator settings.
 
 ```
 User's WezTerm (user's config, untouched)
@@ -19,7 +23,7 @@ User's WezTerm (user's config, untouched)
             └── pane: pi agent
 ```
 
-**What tau does NOT touch:** your `~/.config/tmux/`, your `~/.config/wezterm/`, or anything else in `$HOME`. tau's tmux config lives in the repo and is loaded via the `-f` flag. Terminal emulator settings are documented as reference snippets in `terminals/`.
+tau lives entirely in its own directory. The tmux config is loaded via `-f`, terminal settings are reference snippets you copy into your own config. Nothing is symlinked into `$HOME`. Fork-and-modify is the only workflow.
 
 ## Quick Start
 
@@ -27,12 +31,11 @@ User's WezTerm (user's config, untouched)
 # 1. Install dependencies
 npm install -g @mariozechner/pi-coding-agent
 
-# 2. Install tau (pick one)
-ln -s ~/Developer/tau/bin/tau ~/.local/bin/tau   # symlink
-# or
-make install                                      # same thing
+# 2. Install tau
+git clone https://github.com/S1M0N38/tau.git ~/Developer/tau
+ln -s ~/Developer/tau/bin/tau ~/.local/bin/tau
 
-# 3. Start tau
+# 3. Start
 tau
 ```
 
@@ -46,30 +49,7 @@ That's it. Run `tau` from a plain terminal — it attaches to an existing server
 | tmux | 3.6+ |
 | pi | latest |
 
-Your terminal emulator needs kitty keyboard protocol, true color support, and zero padding. See [terminals/](terminals/) for setup instructions.
-
-## Installation
-
-### Option A: Single symlink
-
-```bash
-git clone https://github.com/user/tau.git ~/Developer/tau
-ln -s ~/Developer/tau/bin/tau ~/.local/bin/tau
-```
-
-### Option B: Add to PATH
-
-```bash
-git clone https://github.com/user/tau.git ~/Developer/tau
-echo 'export PATH="$HOME/Developer/tau/bin:$PATH"' >> ~/.bashrc
-```
-
-### Uninstall
-
-```bash
-rm ~/.local/bin/tau   # if symlinked
-tmux -L tau kill-server  # stop the server
-```
+Your terminal needs kitty keyboard protocol, true color support, and zero padding. See [terminals/](terminals/) for setup instructions.
 
 ## Key Bindings
 
@@ -110,9 +90,7 @@ tmux -L tau kill-server  # stop the server
 
 ## Customization
 
-tau's config lives at `config/tmux.conf` in the repo. Edit it directly — fork-and-modify workflow. No symlinks, no overlays, no backup/restore.
-
-Terminal emulator settings are in `terminals/` as reference snippets. Copy what you need into your own config.
+Edit `config/tmux.conf` in the repo directly. No symlinks, no overlays, no backup/restore. Terminal emulator settings are in `terminals/` as reference snippets — copy what you need into your own config.
 
 ## Theme
 
