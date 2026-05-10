@@ -13,7 +13,7 @@ tau doesn't touch your config. No dotfile surgery, no backup rituals, no "let me
 ## How It Works
 
 ```
-User's WezTerm (user's config, untouched)
+User's terminal (WezTerm or Ghostty — user's config, untouched)
 └── $ tau                          ← one command
     └── tmux -L tau -f <config>   ← isolated server, own socket, own config
         ├── session: project-a
@@ -45,7 +45,7 @@ That's it. Run `tau` from a plain terminal — it attaches to an existing server
 
 | Component | Minimum Version |
 |-----------|----------------|
-| WezTerm | latest stable |
+| WezTerm or Ghostty | latest stable |
 | tmux | 3.6+ |
 | pi | latest |
 | fzf | latest |
@@ -139,4 +139,4 @@ Edit `config/tmux.conf` in the repo directly. No symlinks, no overlays, no backu
 
 ## Theme
 
-Everything uses **Tokyo Night Moon** with matching true-color hex codes across WezTerm, tmux, and Neovim.
+Everything uses **Tokyo Night Moon** with matching true-color hex codes across WezTerm/Ghostty, tmux, and Neovim.

@@ -7,7 +7,7 @@ The name is a wordplay on pi (π → τ): tau is 2π, because one pi agent is ne
 ## Architecture
 
 ```
-User's WezTerm (user's config, untouched)
+User's terminal (WezTerm or Ghostty — user's config, untouched)
 └── $ tau                          ← one command
     └── tmux -L tau -f <config>   ← isolated server, own socket, own config
         ├── session: project-a
@@ -19,7 +19,7 @@ User's WezTerm (user's config, untouched)
 
 - **`bin/tau`** — single entry point; attaches to existing server or starts a new one
 - **tmux isolation** — `tmux -L tau -f <tau-config>` creates a dedicated server on socket `tau`, independent from any user tmux sessions
-- **WezTerm** — renders everything, handles kitty keyboard protocol for reliable modifier keys
+- **WezTerm or Ghostty** — renders everything, handles kitty keyboard protocol for reliable modifier keys
 - **pi** — runs as a standalone TUI in a tmux pane
 - **`$TAU_ROOT`** — env var exported by `bin/tau`, inherited by tmux and all child processes; used for path resolution in scripts and config
 
@@ -41,7 +41,8 @@ tau/
 │   └── tau-spawn-pi        # Spawn pi pane in grid layout
 ├── terminals/              # Reference configs for terminal emulators
 │   ├── README.md           # "Copy these settings into your terminal config"
-│   └── wezterm.lua         # Required WezTerm settings for tau
+│   ├── wezterm.lua         # Required WezTerm settings for tau
+│   └── ghostty             # Required Ghostty settings for tau
 ├── .editorconfig
 ├── .shellcheckrc
 ├── Makefile                # install, uninstall, lint, check targets
@@ -125,7 +126,7 @@ Loaded via `tmux -L tau -f $TAU_ROOT/config/tmux.conf`. Not symlinked to a syste
 - **`default-terminal "tmux-256color"`** — accurate color rendering inside tmux
 - **`allow-passthrough on`** — lets programs send escape sequences directly to the outer terminal
 
-**Tokyo Night Moon colorscheme** — applied to mode, messages, pane borders, and status bar using true-color hex codes matching WezTerm and Neovim.
+**Tokyo Night Moon colorscheme** — applied to mode, messages, pane borders, and status bar using true-color hex codes matching WezTerm/Ghostty and Neovim.
 
 **Status bar:**
 - Left: tmux window list — shows window number and name (`#I #W`), current window highlighted on a blue badge
@@ -160,7 +161,7 @@ tau does NOT touch the user's terminal emulator config. `terminals/` contains re
 
 | Component | Minimum Version |
 |-----------|----------------|
-| WezTerm | latest stable |
+| WezTerm or Ghostty | latest stable |
 | tmux | 3.6+ |
 | pi | latest |
 
@@ -169,19 +170,20 @@ tau does NOT touch the user's terminal emulator config. `terminals/` contains re
 Modified keys must pass through two layers to reach pi. Each layer must be configured:
 
 ```
-WezTerm → (kitty keyboard protocol) → tmux → (CSI-u extkeys) → pi
+Terminal (WezTerm/Ghostty) → (kitty keyboard protocol) → tmux → (CSI-u extkeys) → pi
 ```
 
 - **WezTerm**: `enable_kitty_keyboard = true` encodes Shift+Enter as `\x1b[13;2u`
+- **Ghostty**: kitty keyboard protocol enabled by default
 - **tmux**: `extended-keys always` + `extended-keys-format csi-u` forwards the sequence unchanged
 
-For prefix-less WezTerm→tmux key bindings, the chain is simpler:
+For prefix-less terminal→tmux key bindings, the chain is simpler:
 
 ```
-WezTerm → (custom escape sequence) → tmux → (user-key binding) → action
+Terminal (WezTerm/Ghostty) → (custom escape sequence) → tmux → (user-key binding) → action
 ```
 
-Each WezTerm key binding sends a unique escape sequence that tmux maps to a user-key, which is then bound to an action (window cycling, session cycling, pane spawning, etc.).
+Each terminal key binding sends a unique escape sequence that tmux maps to a user-key, which is then bound to an action (window cycling, session cycling, pane spawning, etc.).
 
 ## Editing Conventions
 
@@ -299,5 +301,5 @@ Panes are assigned in creation order (oldest → top-left, newest → bottom-rig
 ## Things to Watch
 
 - **tmux must be fully restarted** (`tmux -L tau kill-server`) after changing `extended-keys` settings — reload (`prefix r`) is not enough
-- **WezTerm's Ctrl+=/- bindings** are intentionally disabled (`action.Nop`) to prevent the terminal from intercepting zoom shortcuts that tmux or Neovim may use
+- **Terminal Ctrl+=/- bindings** are intentionally disabled (WezTerm: `action.Nop`) to prevent the terminal from intercepting zoom shortcuts that tmux or Neovim may use
 - **`$TAU_ROOT` must be set** — all scripts depend on it. Always start tau via `bin/tau`, not by manually running `tmux -L tau`
