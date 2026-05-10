@@ -6,6 +6,9 @@ set -uo pipefail
 
 source "${TAU_ROOT}/lib/common.sh"
 
+# Default to pi if not set in the tmux server environment
+: "${TAU_AGENT_CMD:=pi}"
+
 MIN_WIDTH=80
 MIN_HEIGHT=10
 
