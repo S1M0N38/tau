@@ -23,6 +23,6 @@ For the best experience, your terminal needs:
 
 Pick your terminal:
 
-- [WezTerm](wezterm.lua) — copy into your `wezterm.lua`  *(recommended — best Cmd key support)*
+- [WezTerm](wezterm.lua) — copy into `~/.config/wezterm/wezterm.lua`  *(most tested — daily-driven by the author)*
 - [Ghostty](ghostty) — copy into `~/.config/ghostty/config`
 
