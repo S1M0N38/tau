@@ -4,6 +4,7 @@ load 'helpers/setup'
 
 @test "tau exits with error when TAU_PROJECT_DIR is unset" {
     unset TAU_PROJECT_DIR
+    unset TMUX
 
     run bash "${TAU_ROOT}/bin/tau"
     [ "$status" -ne 0 ]
@@ -12,6 +13,7 @@ load 'helpers/setup'
 
 @test "tau exits with error when TAU_PROJECT_DIR points to nonexistent dir" {
     export TAU_PROJECT_DIR="/tmp/tau-nonexistent-dir-$$"
+    unset TMUX
 
     run bash "${TAU_ROOT}/bin/tau"
     [ "$status" -ne 0 ]
