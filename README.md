@@ -53,6 +53,7 @@ That's it. Run `tau` from a plain terminal — it attaches to an existing server
 | `TAU_PROJECT_DIR` | **yes** | — | Directory containing your projects. tau refuses to start if unset or missing. Used by the sessionizer (`Prefix+f`). |
 | `TAU_EDITOR_CMD` | no | — | Command launched by `Cmd+E` in a floating popup. Shows a tmux notification if unset. |
 | `TAU_GIT_CMD` | no | — | Command launched by `Cmd+G` in a floating popup. Shows a tmux notification if unset. |
+| `TAU_AGENT_CMD` | no | `pi` | Command spawned by `Cmd+A` in grid layout. Defaults to `pi`. |
 
 ## Requirements
 

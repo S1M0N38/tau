@@ -25,6 +25,7 @@ User's terminal (WezTerm or Ghostty — user's config, untouched)
 - **`$TAU_PROJECT_DIR`** — required env var; directory containing your projects. tau refuses to start if unset or missing
 - **`$TAU_EDITOR_CMD`** — optional env var; command launched by Cmd+E popup. Shows tmux notification if unset
 - **`$TAU_GIT_CMD`** — optional env var; command launched by Cmd+G popup. Shows tmux notification if unset
+- **`$TAU_AGENT_CMD`** — optional env var; command spawned by Cmd+A in grid layout (defaults to `pi`)
 
 ## Project Structure
 
@@ -86,7 +87,7 @@ Or use `make install` / `make uninstall`.
 
 1. Exports `TAU_ROOT` (resolved from its own location)
 2. Validates `TAU_PROJECT_DIR` is set and the directory exists (exits with error if not)
-3. Exports `TAU_EDITOR_CMD` and `TAU_GIT_CMD` (optional, defaults to empty)
+3. Exports `TAU_EDITOR_CMD`, `TAU_GIT_CMD`, and `TAU_AGENT_CMD` (optional, defaults to empty/pi)
 4. Checks if a tau tmux server exists (`tmux -L tau has-session`)
 5. If yes → `exec tmux -L tau attach`
 6. If no → `exec tmux -L tau -f "$TAU_ROOT/config/tmux.conf" new-session -s scratch` with `-e` flags to pass env vars into the server
@@ -109,10 +110,10 @@ fi
 TAU_PROJECT_DIR="$(cd "$TAU_PROJECT_DIR" 2>/dev/null && pwd)" || {
     echo "tau: TAU_PROJECT_DIR does not exist." >&2; exit 1
 }
-export TAU_PROJECT_DIR TAU_EDITOR_CMD TAU_GIT_CMD
+export TAU_PROJECT_DIR TAU_EDITOR_CMD TAU_GIT_CMD TAU_AGENT_CMD
 
 exec tmux -L tau -f "$TAU_ROOT/config/tmux.conf" new-session -s scratch \
-    -e TAU_ROOT -e TAU_PROJECT_DIR -e TAU_EDITOR_CMD -e TAU_GIT_CMD
+    -e TAU_ROOT -e TAU_PROJECT_DIR -e TAU_EDITOR_CMD -e TAU_GIT_CMD -e TAU_AGENT_CMD
 ```
 
 ```tmux

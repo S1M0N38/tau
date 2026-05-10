@@ -14,7 +14,7 @@ current_cmd=$(tmux -L "$TAU_SOCKET" display-message -p '#{pane_current_command}'
 # shellcheck disable=SC2221,SC2222
 case "$current_cmd" in
   *bash*|*zsh*|*sh|fish|dash|ksh|csh|tcsh)
-    tmux -L "$TAU_SOCKET" send-keys -t "$current_pane" pi Enter
+    tmux -L "$TAU_SOCKET" send-keys -t "$current_pane" "$TAU_AGENT_CMD" Enter
     exit 0
     ;;
 esac
@@ -40,8 +40,8 @@ if [ "$pane_h" -lt "$MIN_HEIGHT" ]; then
   exit 1
 fi
 
-new_pane=$(tmux -L "$TAU_SOCKET" split-window -h -P -F '#{pane_id}' -c "#{pane_current_path}" "pi") || {
-  tmux -L "$TAU_SOCKET" display-message "Failed to spawn pi pane (not enough space?)"
+new_pane=$(tmux -L "$TAU_SOCKET" split-window -h -P -F '#{pane_id}' -c "#{pane_current_path}" "$TAU_AGENT_CMD") || {
+  tmux -L "$TAU_SOCKET" display-message "Failed to spawn agent pane (not enough space?)"
   exit 0
 }
 

@@ -32,6 +32,9 @@ export TAU_PROJECT_DIR
 export TAU_EDITOR_CMD="${TAU_EDITOR_CMD:-}"
 export TAU_GIT_CMD="${TAU_GIT_CMD:-}"
 
+# Optional — defaults to pi (the coding agent command to spawn)
+export TAU_AGENT_CMD="${TAU_AGENT_CMD:-pi}"
+
 TAU_SOCKET="tau"
 TAU_CONFIG="$TAU_ROOT/config/tmux.conf"
 
@@ -44,7 +47,8 @@ start_tmux() {
             -e TAU_ROOT="$TAU_ROOT" \
             -e TAU_PROJECT_DIR="$TAU_PROJECT_DIR" \
             -e TAU_EDITOR_CMD="$TAU_EDITOR_CMD" \
-            -e TAU_GIT_CMD="$TAU_GIT_CMD"
+            -e TAU_GIT_CMD="$TAU_GIT_CMD" \
+            -e TAU_AGENT_CMD="$TAU_AGENT_CMD"
     fi
 }
 
