@@ -64,6 +64,8 @@ config.keys = {
   { key = "g", mods = "SUPER", action = wezterm.action({ SendString = "\x1b[43;9~" }) },
   -- Cmd+E → tmux user-key (User29) — editor floating popup (LazyVim)
   { key = "e", mods = "SUPER", action = wezterm.action({ SendString = "\x1b[44;9~" }) },
+  -- Cmd+S → tmux user-key (User30) — scratch shell popup
+  { key = "s", mods = "SUPER", action = wezterm.action({ SendString = "\x1b[45;9~" }) },
 
   -- ── Pass-through & overrides ────────────────────────────────────────
   -- Alt+Enter passthrough (for pi and other TUI tools)

@@ -61,6 +61,8 @@ keybind = super+a=text:\x1b[17;9~
 keybind = super+g=text:\x1b[43;9~
 # Super+E → tmux user-key (User29) — editor floating popup (LazyVim)
 keybind = super+e=text:\x1b[44;9~
+# Super+S → tmux user-key (User30) — scratch shell popup
+keybind = super+s=text:\x1b[45;9~
 
 # ── Pass-through ────────────────────────────────────────────────────
 # Alt+Enter passthrough (for pi and other TUI tools)

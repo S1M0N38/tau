@@ -160,7 +160,7 @@ Loaded via `tmux -L tau -f $TAU_ROOT/config/tmux.conf`. Not symlinked to a syste
 - **Cmd+A** (User5) — spawn pi pane in grid layout via `tau-spawn-pi`
 - **Cmd+G** (User28) — open `$TAU_GIT_CMD` in a floating popup (90%×90%) via `tau-popup-git`. Shows tmux notification if `TAU_GIT_CMD` is unset
 - **Cmd+E** (User29) — open `$TAU_EDITOR_CMD` in a floating popup (90%×90%) via `tau-popup-editor`. Shows tmux notification if `TAU_EDITOR_CMD` is unset
-- **Cmd+S** (User30) — toggle persistent scratch shell in a floating popup (90%×90%) via `tau-popup-scratch`. Creates a hidden `@scratch` window that survives close/reopen
+- **Cmd+S** (User30) — open a floating scratch shell (90%×90%) via `tau-popup-scratch`
 - **Super+Left / Super+Right** (User6/User7) — reorder windows with `swap-window`
 - **Super+Shift+Left / Super+Shift+Right** (User8/User9) — reorder sessions via `tau-swap-session`
 
@@ -328,7 +328,7 @@ Wrapper for Cmd+E. Same pattern as `tau-popup-git` but checks `TAU_EDITOR_CMD`.
 
 ### tau-popup-scratch
 
-Toggle persistent scratch shell (Cmd+S). Creates a hidden `@scratch` tmux window in the current session if one doesn't exist. Opens a 90%×90% floating popup connected to it via `display-popup`. Pressing Cmd+S again closes the popup — the shell process and its history survive in the `@scratch` window.
+Floating shell popup (Cmd+S). Opens a 90%×90% popup running `$SHELL` in the current pane's working directory. Same pattern as `tau-popup-git` and `tau-popup-editor` but always available (no env var needed).
 
 ## Things to Watch
 

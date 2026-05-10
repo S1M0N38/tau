@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# tau-popup-scratch — floating shell popup (Cmd+S)
+# Opens a simple floating shell for quick commands, like Cmd+G and Cmd+E.
+
+source "$TAU_ROOT/lib/common.sh"
+
+pane_dir=$(tmux -L "$TAU_SOCKET" display-message -p '#{pane_current_path}')
+
+tmux -L "$TAU_SOCKET" display-popup -w 90% -h 90% -d "$pane_dir" -E "${SHELL:-/bin/bash}"
