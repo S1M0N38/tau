@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # tau-session-closed — handle session destruction
 # With detach-on-destroy off, tmux auto-switches to another session.
-# This script kills the tau server if only scratch or no sessions remain.
+# This script kills the tau server if only hidden or no sessions remain.
 set -euo pipefail
 
 source "${TAU_ROOT}/lib/common.sh"
 
-# Collect non-scratch sessions
-remaining=$(tau_list_sessions | cut -d'|' -f2 | grep -v '^scratch$' || true)
+# tau_list_sessions already excludes @hidden sessions.
+# If no visible sessions remain, kill the server.
+remaining=$(tau_list_sessions | cut -d'|' -f2 || true)
 
 if [ -z "$remaining" ]; then
-    # No project sessions left — kill the tau server
     tmux -L "$TAU_SOCKET" kill-server
 fi

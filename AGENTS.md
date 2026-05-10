@@ -44,7 +44,8 @@ tau/
 │   ├── tau-swap-session    # Reorder sessions (Super+Shift+Left/Right)
 │   ├── tau-spawn-pi        # Spawn pi pane in grid layout
 │   ├── tau-popup-git       # Cmd+G popup (checks TAU_GIT_CMD)
-│   └── tau-popup-editor    # Cmd+E popup (checks TAU_EDITOR_CMD)
+│   ├── tau-popup-editor    # Cmd+E popup (checks TAU_EDITOR_CMD)
+│   └── tau-session-closed  # session-closed hook: kill server if only hidden sessions remain
 ├── terminals/              # Reference configs for terminal emulators
 │   ├── README.md           # "Copy these settings into your terminal config"
 │   ├── wezterm.lua         # Required WezTerm settings for tau
@@ -149,7 +150,7 @@ Loaded via `tmux -L tau -f $TAU_ROOT/config/tmux.conf`. Not symlinked to a syste
 
 **Status bar:**
 - Left: tmux window list — shows window number and name (`#I #W`), current window highlighted on a blue badge
-- Right: clickable list of all tau sessions via `tau-status-sessions` — shows position number and session name, sorted by `@sort-index`. Current session gets a blue badge. Click to switch.
+- Right: clickable list of all tau sessions via `tau-status-sessions` — shows position number and session name, sorted by `@sort-index`. Hidden sessions (`@hidden on`) are excluded. Current session gets a blue badge. Click to switch.
 - Active elements use dark text (#1b1d2b) on blue background (#82aaff) with powerline transitions
 
 **Prefix-less key bindings:**
@@ -217,11 +218,12 @@ Each terminal key binding sends a unique escape sequence that tmux maps to a use
 
 ### Simplified — flat list with one metadata field
 
-Since `-L tau` isolation means every session on the server IS a tau session, no filtering is needed. Sessions have a single metadata field:
+Since `-L tau` isolation means every session on the server IS a tau session, no filtering is needed. Sessions have two metadata fields:
 
 | Option | Purpose | Set by | Used by |
 |--------|---------|--------|----------|
 | `@sort-index` | Sort order | `tau-swap-session` (initially unset → creation order) | `tau-status-sessions`, `tau-cycle-session`, `tau-swap-session` |
+| `@hidden` | Hide from status bar and cycling | `bin/tau` (marks `scratch` on creation) | `tau_list_sessions` (excludes `@hidden on` sessions) |
 
 **Important**: use session-scoped options (`set-option -t <session>`) not server-scoped (`set-option -s`) — server scope is global across all sessions.
 
@@ -253,9 +255,10 @@ Sourced by all scripts in `scripts/`. Provides:
 ```bash
 TAU_SOCKET="tau"                  # Socket name for all tmux -L calls
 
-tau_list_sessions()               # Lists all sessions sorted by @sort-index
+tau_list_sessions()               # Lists all non-hidden sessions sorted by @sort-index
                                    # Output: <sort-index>|<session-name>
                                    # Falls back to creation order when unset
+                                   # Excludes sessions with @hidden on
 
 tau_current_session()             # Returns current session name
 ```
@@ -329,6 +332,10 @@ Wrapper for Cmd+E. Same pattern as `tau-popup-git` but checks `TAU_EDITOR_CMD`.
 ### tau-popup-scratch
 
 Floating shell popup (Cmd+S). Opens a 90%×90% popup running `$SHELL` in the current pane's working directory. Same pattern as `tau-popup-git` and `tau-popup-editor` but always available (no env var needed).
+
+### tau-session-closed
+
+Triggered by the `session-closed` tmux hook. Checks if any visible (non-`@hidden`) sessions remain. If not, kills the tau server — the user is dropped back to their terminal. This prevents the server from lingering with only utility sessions.
 
 ## Things to Watch
 

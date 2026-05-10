@@ -4,10 +4,12 @@
 TAU_SOCKET="${TAU_SOCKET:-tau}"
 
 # Output: <sort-index>|<session-name> (creation-order fallback when @sort-index unset)
+# Sessions with @hidden on are excluded.
 tau_list_sessions() {
     local idx=0
-    tmux -L "$TAU_SOCKET" list-sessions -F '#{session_name}|#{@sort-index}' 2>/dev/null | {
-        while IFS='|' read -r name sort_idx; do
+    tmux -L "$TAU_SOCKET" list-sessions -F '#{session_name}|#{@sort-index}|#{@hidden}' 2>/dev/null | {
+        while IFS='|' read -r name sort_idx hidden; do
+            [ "$hidden" = "on" ] && continue
             idx=$((idx + 1))
             echo "${sort_idx:-$idx}|$name"
         done

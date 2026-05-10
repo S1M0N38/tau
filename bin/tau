@@ -43,12 +43,14 @@ start_tmux() {
     if tmux -L "$TAU_SOCKET" has-session 2>/dev/null; then
         exec tmux -L "$TAU_SOCKET" attach
     else
-        exec tmux -L "$TAU_SOCKET" -f "$TAU_CONFIG" new-session -s scratch \
+        tmux -L "$TAU_SOCKET" -f "$TAU_CONFIG" new-session -d -s scratch \
             -e TAU_ROOT="$TAU_ROOT" \
             -e TAU_PROJECT_DIR="$TAU_PROJECT_DIR" \
             -e TAU_EDITOR_CMD="$TAU_EDITOR_CMD" \
             -e TAU_GIT_CMD="$TAU_GIT_CMD" \
             -e TAU_AGENT_CMD="$TAU_AGENT_CMD"
+        tmux -L "$TAU_SOCKET" set-option -t scratch @hidden on
+        exec tmux -L "$TAU_SOCKET" attach
     fi
 }
 
