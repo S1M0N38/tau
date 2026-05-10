@@ -11,8 +11,8 @@ teardown() {
 }
 
 @test "spawn-pi on idle shell sends pi to current pane instead of splitting" {
-    # Sessions with default shell — spawn-pi detects idle shell and sends "pi" inline
-    tmux -L "$TAU_SOCKET" new-session -d -s shell-test -x 240 -y 60
+    # Sessions with a shell — spawn-pi detects idle shell and sends "pi" inline
+    tmux -L "$TAU_SOCKET" new-session -d -s shell-test -x 240 -y 60 "bash"
 
     run bash "${TAU_ROOT}/scripts/tau-spawn-pi"
     [ "$status" -eq 0 ]

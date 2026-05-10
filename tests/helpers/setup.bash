@@ -46,9 +46,15 @@ tau_test_set_sort_index() {
 
 # Attach a tmux client using script(1) as a PTY wrapper.
 # Needed for switch-client (requires an attached client).
+# macOS script: script -q file command [args...]
+# Linux script: script -qc "command args" file
 tau_test_attach() {
     local session="$1"
-    script -q /dev/null tmux -L "$TAU_SOCKET" attach -t "$session" &
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        script -q /dev/null tmux -L "$TAU_SOCKET" attach -t "$session" &
+    else
+        script -qc "tmux -L $TAU_SOCKET attach -t $session" /dev/null &
+    fi
     _TAU_CLIENT_PID=$!
     sleep 0.5
 }

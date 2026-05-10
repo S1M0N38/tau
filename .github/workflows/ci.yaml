@@ -20,11 +20,24 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    env:
+      TERM: xterm-256color
     steps:
       - uses: actions/checkout@v4
 
       - name: Install bats
         run: sudo apt-get update && sudo apt-get install -y bats
+
+      - name: Install tmux 3.6a
+        run: |
+          curl -sL https://github.com/tmux/tmux-builds/releases/download/v3.6a/tmux-3.6a-linux-x86_64.tar.gz | tar xz
+          sudo mv tmux /usr/local/bin/tmux
+
+      - name: Stub pi command
+        # tau-spawn-pi launches "pi" in new panes; provide a no-op stub so panes stay alive.
+        run: |
+          printf '#!/bin/sh\nsleep 999999\n' | sudo tee /usr/local/bin/pi
+          sudo chmod +x /usr/local/bin/pi
 
       - name: Test
         run: make test
