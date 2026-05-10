@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tau-sessionizer — pick a repo in ~/Developer, create or switch session
+# tau-sessionizer — pick a repo in $TAU_PROJECT_DIR, create or switch session
 set -euo pipefail
 
 source "${TAU_ROOT}/lib/common.sh"

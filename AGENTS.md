@@ -53,7 +53,8 @@ tau/
 ├── Makefile                # install, uninstall, lint, check targets
 ├── AGENTS.md               # this file
 ├── CHANGELOG.md
-└── README.md
+├── README.md
+└── VERSION                 # release-please managed version
 ```
 
 ### Directory purposes
