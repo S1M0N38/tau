@@ -4,13 +4,6 @@
   "bootstrap-sha": "66479e5b701c3e6c35adad09be93e40867186b7a",
   "include-v-in-tag": true,
   "packages": {
-    ".": {
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "VERSION"
-        }
-      ]
-    }
+    ".": {}
   }
 }
