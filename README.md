@@ -8,7 +8,7 @@
 
 One agent is never enough. A single pi session is powerful — but real work means juggling projects, switching contexts, keeping multiple conversations alive. tau gives each project its own session, each agent its own pane, and lets you move between them without friction.
 
-tau doesn't touch your config. No dotfile surgery, no backup rituals, no "let me restore my tmux after this." It runs an isolated tmux server with its own socket and its own config — completely independent from anything else on your system. Start it, use it, kill it. Your setup stays pristine.
+tau doesn't touch your config. No dotfile surgery, no backup rituals, no "let me restore my tmux after this." It runs an isolated tmux server with its own socket and its own config — completely independent from anything else on your system. Start it, use it, kill it. Your terminal and tmux setup stays pristine.
 
 ## How It Works
 
@@ -23,7 +23,7 @@ User's terminal (WezTerm or Ghostty — user's config, untouched)
             └── pane: pi agent
 ```
 
-tau lives entirely in its own directory. The tmux config is loaded via `-f`, terminal settings are reference snippets you copy into your own config. Nothing is symlinked into `$HOME`. Fork-and-modify is the only workflow.
+tau lives entirely in its own directory. The tmux config is loaded via `-f`, terminal settings are reference snippets you copy into your own config. No config files are modified — fork-and-modify is the only workflow.
 
 ## Quick Start
 
@@ -92,8 +92,8 @@ Your terminal needs kitty keyboard protocol, true color support, and zero paddin
 | `Prefix+\|` | Horizontal split — inherits cwd |
 | `Prefix+-` | Vertical split — inherits cwd |
 | `Cmd+A` | Spawn pi pane in grid layout |
-| `Cmd+G` | Open lazygit in floating popup |
-| `Cmd+E` | Open LazyVim in floating popup |
+| `Cmd+G` | Open `$TAU_GIT_CMD` in floating popup |
+| `Cmd+E` | Open `$TAU_EDITOR_CMD` in floating popup |
 
 ### Miscellaneous
 
