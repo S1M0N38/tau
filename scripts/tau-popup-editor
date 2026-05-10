@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# tau-popup-editor — launch editor popup (Cmd+E)
+# Shows a tmux notification if TAU_EDITOR_CMD is not set.
+
+source "${TAU_ROOT}/lib/common.sh"
+
+if [ -z "${TAU_EDITOR_CMD:-}" ]; then
+    tmux -L "$TAU_SOCKET" display-message "TAU_EDITOR_CMD is not set. Configure it before using Cmd+E."
+    exit 0
+fi
+
+# Get the current pane's working directory
+pane_dir=$(tmux -L "$TAU_SOCKET" display-message -p '#{pane_current_path}')
+
+tmux -L "$TAU_SOCKET" display-popup -w 90% -h 90% -d "$pane_dir" -E "$TAU_EDITOR_CMD"

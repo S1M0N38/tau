@@ -4,11 +4,11 @@ set -euo pipefail
 
 source "${TAU_ROOT}/lib/common.sh"
 
-selected=$(find ~/Developer -mindepth 1 -maxdepth 1 -type d -exec basename {} \; \
+selected=$(find "$TAU_PROJECT_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; \
   | fzf --reverse --height=~40% --no-mouse --prompt="session> ") || exit 0
 
 name=$(echo "$selected" | tr ' .:' '-' | tr '[:upper:]' '[:lower:]')
-path="$HOME/Developer/$selected"
+path="$TAU_PROJECT_DIR/$selected"
 
 if ! tmux -L "$TAU_SOCKET" has-session -t="$name" 2>/dev/null; then
   tmux -L "$TAU_SOCKET" new-session -d -s "$name" -c "$path"
