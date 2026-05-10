@@ -22,6 +22,9 @@ User's terminal (WezTerm or Ghostty — user's config, untouched)
 - **WezTerm or Ghostty** — renders everything, handles kitty keyboard protocol for reliable modifier keys
 - **pi** — runs as a standalone TUI in a tmux pane
 - **`$TAU_ROOT`** — env var exported by `bin/tau`, inherited by tmux and all child processes; used for path resolution in scripts and config
+- **`$TAU_PROJECT_DIR`** — required env var; directory containing your projects. tau refuses to start if unset or missing
+- **`$TAU_EDITOR_CMD`** — optional env var; command launched by Cmd+E popup. Shows tmux notification if unset
+- **`$TAU_GIT_CMD`** — optional env var; command launched by Cmd+G popup. Shows tmux notification if unset
 
 ## Project Structure
 
@@ -38,7 +41,9 @@ tau/
 │   ├── tau-status-sessions # Status bar session list
 │   ├── tau-cycle-session   # Cycle sessions (Cmd+Shift+H/L)
 │   ├── tau-swap-session    # Reorder sessions (Super+Shift+Left/Right)
-│   └── tau-spawn-pi        # Spawn pi pane in grid layout
+│   ├── tau-spawn-pi        # Spawn pi pane in grid layout
+│   ├── tau-popup-git       # Cmd+G popup (checks TAU_GIT_CMD)
+│   └── tau-popup-editor    # Cmd+E popup (checks TAU_EDITOR_CMD)
 ├── terminals/              # Reference configs for terminal emulators
 │   ├── README.md           # "Copy these settings into your terminal config"
 │   ├── wezterm.lua         # Required WezTerm settings for tau
@@ -80,11 +85,13 @@ Or use `make install` / `make uninstall`.
 `bin/tau` is a single script that:
 
 1. Exports `TAU_ROOT` (resolved from its own location)
-2. Checks if a tau tmux server exists (`tmux -L tau has-session`)
-3. If yes → `exec tmux -L tau attach`
-4. If no → `exec tmux -L tau -f "$TAU_ROOT/config/tmux.conf" new-session -s scratch`
+2. Validates `TAU_PROJECT_DIR` is set and the directory exists (exits with error if not)
+3. Exports `TAU_EDITOR_CMD` and `TAU_GIT_CMD` (optional, defaults to empty)
+4. Checks if a tau tmux server exists (`tmux -L tau has-session`)
+5. If yes → `exec tmux -L tau attach`
+6. If no → `exec tmux -L tau -f "$TAU_ROOT/config/tmux.conf" new-session -s scratch` with `-e` flags to pass env vars into the server
 
-Guards: exits if already inside tmux (no nested sessions).
+Guards: exits if already inside tmux (no nested sessions), exits if `TAU_PROJECT_DIR` is unset or missing.
 
 ## Path Resolution
 
@@ -94,7 +101,18 @@ Guards: exits if already inside tmux (no nested sessions).
 # bin/tau
 export TAU_ROOT
 TAU_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-exec tmux -L tau -f "$TAU_ROOT/config/tmux.conf" new-session -s scratch
+
+# Validate TAU_PROJECT_DIR (required)
+if [ -z "${TAU_PROJECT_DIR:-}" ]; then
+    echo "tau: TAU_PROJECT_DIR is not set." >&2; exit 1
+fi
+TAU_PROJECT_DIR="$(cd "$TAU_PROJECT_DIR" 2>/dev/null && pwd)" || {
+    echo "tau: TAU_PROJECT_DIR does not exist." >&2; exit 1
+}
+export TAU_PROJECT_DIR TAU_EDITOR_CMD TAU_GIT_CMD
+
+exec tmux -L tau -f "$TAU_ROOT/config/tmux.conf" new-session -s scratch \
+    -e TAU_ROOT -e TAU_PROJECT_DIR -e TAU_EDITOR_CMD -e TAU_GIT_CMD
 ```
 
 ```tmux
@@ -139,8 +157,8 @@ Loaded via `tmux -L tau -f $TAU_ROOT/config/tmux.conf`. Not symlinked to a syste
 - **Cmd+Shift+H / Cmd+Shift+L** (User2/User3) — cycle sessions via `tau-cycle-session`
 - **Cmd+T** (User4) — new window in current directory
 - **Cmd+A** (User5) — spawn pi pane in grid layout via `tau-spawn-pi`
-- **Cmd+G** (User28) — open lazygit in a floating popup (90%×90%) in the current pane's working directory
-- **Cmd+E** (User29) — open editor popup (90%×90%) running LazyVim (`env NVIM_APPNAME=lazyvim nvim`). Close with `:q`
+- **Cmd+G** (User28) — open `$TAU_GIT_CMD` in a floating popup (90%×90%) via `tau-popup-git`. Shows tmux notification if `TAU_GIT_CMD` is unset
+- **Cmd+E** (User29) — open `$TAU_EDITOR_CMD` in a floating popup (90%×90%) via `tau-popup-editor`. Shows tmux notification if `TAU_EDITOR_CMD` is unset
 - **Super+Left / Super+Right** (User6/User7) — reorder windows with `swap-window`
 - **Super+Shift+Left / Super+Shift+Right** (User8/User9) — reorder sessions via `tau-swap-session`
 
@@ -148,7 +166,7 @@ Loaded via `tmux -L tau -f $TAU_ROOT/config/tmux.conf`. Not symlinked to a syste
 - **Ctrl+h/j/k/l** — seamless Neovim ↔ tmux pane navigation (Navigator.nvim style). When Neovim is focused, the key passes through so Navigator handles it; otherwise tmux selects the pane directly
 - **prefix | / prefix -** — intuitive splits (horizontal/vertical), new pane inherits cwd
 - **prefix r** — reload config from `$TAU_ROOT/config/tmux.conf`
-- **prefix f** — sessionizer popup (fzf to pick ~/Developer repos)
+- **prefix f** — sessionizer popup (fzf to pick repos from `$TAU_PROJECT_DIR`)
 
 **Hooks:**
 - `client-session-changed` — forces immediate status bar refresh via `refresh-client -S` when switching sessions
@@ -210,10 +228,10 @@ Since `-L tau` isolation means every session on the server IS a tau session, no 
 ```
 tau-sessionizer (prefix+f)
   │
-  ├── fzf picks directory in ~/Developer
+  ├── fzf picks directory in $TAU_PROJECT_DIR
   │
   ├── session doesn't exist?
-  │   └── tmux -L tau new-session -d -s <name> -c ~/Developer/<dir>
+  │   └── tmux -L tau new-session -d -s <name> -c $TAU_PROJECT_DIR/<dir>
   │       (no metadata — @sort-index unset, falls back to creation order)
   │
   └── tmux -L tau switch-client -t <name>
@@ -252,7 +270,7 @@ source "$TAU_ROOT/lib/common.sh"
 
 ### tau-sessionizer
 
-fzf popup to pick a repo in `~/Developer`. Creates a new tmux session on the tau server if one doesn't exist, switches to it otherwise. No metadata set on creation — `@sort-index` stays unset (creation order) until the user reorders.
+fzf popup to pick a repo in `$TAU_PROJECT_DIR`. Creates a new tmux session on the tau server if one doesn't exist, switches to it otherwise. No metadata set on creation — `@sort-index` stays unset (creation order) until the user reorders.
 
 ### tau-status-sessions
 
@@ -297,6 +315,14 @@ Result is the lower 16 bits, formatted as 4 hex digits.
 ```
 
 Panes are assigned in creation order (oldest → top-left, newest → bottom-right).
+
+### tau-popup-git
+
+Wrapper for Cmd+G. Checks `TAU_GIT_CMD` — if unset, shows a tmux notification and exits. Otherwise launches the command in a 90%×90% floating popup in the current pane's working directory.
+
+### tau-popup-editor
+
+Wrapper for Cmd+E. Same pattern as `tau-popup-git` but checks `TAU_EDITOR_CMD`.
 
 ## Things to Watch
 
