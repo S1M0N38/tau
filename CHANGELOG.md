@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.0](https://github.com/S1M0N38/tau/compare/v1.0.0...v1.1.0) (2026-05-10)
+
+
+### Features
+
+* add Cmd+S scratch shell popup (User30) ([f8fff5d](https://github.com/S1M0N38/tau/commit/f8fff5daf1e39c8a283ccf1eb4e825965ebd5a2f))
+* add TAU_AGENT_CMD env var for configurable agent command ([eef9c8a](https://github.com/S1M0N38/tau/commit/eef9c8ad9bf8cf42d5fc2cf61e2b23d208bb38ff))
+* auto-switch on session close and kill server when empty ([d38f131](https://github.com/S1M0N38/tau/commit/d38f1319aa0dbee72249373b498b012d92e2a398))
+* hide scratch session from status bar with `[@hidden](https://github.com/hidden)` metadata flag ([1ada32d](https://github.com/S1M0N38/tau/commit/1ada32dd23d3b1a02f8b8b4a1ccd5e980a933241))
+
+
+### Bug Fixes
+
+* **test:** unset TMUX in tau-bin tests to avoid early tmux guard exit ([33a701e](https://github.com/S1M0N38/tau/commit/33a701e3260ef4f5fd9cb5f9e0b325a8586fc58c))
+
 ## 1.0.0 (2026-05-10)
 
 
