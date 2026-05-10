@@ -89,7 +89,7 @@ Your terminal needs kitty keyboard protocol, true color support, and zero paddin
 | Key | Action |
 |-----|--------|
 | `Ctrl+H` / `Ctrl+J` / `Ctrl+K` / `Ctrl+L` | Navigate panes (Neovim-aware) |
-| `Prefix+|` | Horizontal split — inherits cwd |
+| `Prefix+\|` | Horizontal split — inherits cwd |
 | `Prefix+-` | Vertical split — inherits cwd |
 | `Cmd+A` | Spawn pi pane in grid layout |
 | `Cmd+G` | Open lazygit in floating popup |
