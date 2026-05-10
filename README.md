@@ -8,7 +8,7 @@
 
 tau is a preconfigured terminal workspace built on an isolated tmux server. One command gives you sane defaults — vi copy mode, true color, prefix-less key bindings, project sessions, popup overlays — without touching a single dotfile.
 
-It pairs particularly well with [pi](https://github.com/mariozechner/pi-mono) coding agents: `Cmd+A` spawns an agent pane and arranges all panes into a clean grid. But pi is just a feature, not the point. tau works great with any terminal workflow.
+It pairs particularly well with [pi](https://github.com/earendil-works/pi) coding agents: `Cmd+A` spawns an agent pane and arranges all panes into a clean grid. But pi is just a feature, not the point. tau works great with any terminal workflow.
 
 ## How It Works
 
@@ -43,7 +43,7 @@ tau
 
 That's it. Run `tau` from a plain terminal — it attaches to an existing server or starts a new one.
 
-Want coding agent integration? Install [pi](https://github.com/mariozechner/pi-mono) (`npm install -g @mariozechner/pi-coding-agent`) and `Cmd+A` will spawn agent panes in a grid layout.
+Want coding agent integration? Install [pi](https://github.com/earendil-works/pi) (`npm install -g @earendil-works/pi-coding-agent`) and `Cmd+A` will spawn agent panes in a grid layout.
 
 ### Environment Variables
 

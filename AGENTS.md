@@ -1,6 +1,6 @@
 # Agent Cheat Sheet
 
-**tau** (τ) is a self-contained terminal workspace for [pi](https://github.com/badlogic/pi-mono) coding agents. It runs an isolated tmux server with its own config — no user config files are touched, ever.
+**tau** (τ) is a self-contained terminal workspace for [pi](https://github.com/earendil-works/pi) coding agents. It runs an isolated tmux server with its own config — no user config files are touched, ever.
 
 The name is a wordplay on pi (π → τ): tau is 2π, because one pi agent is never enough.
 
@@ -160,6 +160,7 @@ Loaded via `tmux -L tau -f $TAU_ROOT/config/tmux.conf`. Not symlinked to a syste
 - **Cmd+A** (User5) — spawn pi pane in grid layout via `tau-spawn-pi`
 - **Cmd+G** (User28) — open `$TAU_GIT_CMD` in a floating popup (90%×90%) via `tau-popup-git`. Shows tmux notification if `TAU_GIT_CMD` is unset
 - **Cmd+E** (User29) — open `$TAU_EDITOR_CMD` in a floating popup (90%×90%) via `tau-popup-editor`. Shows tmux notification if `TAU_EDITOR_CMD` is unset
+- **Cmd+S** (User30) — toggle persistent scratch shell in a floating popup (90%×90%) via `tau-popup-scratch`. Creates a hidden `@scratch` window that survives close/reopen
 - **Super+Left / Super+Right** (User6/User7) — reorder windows with `swap-window`
 - **Super+Shift+Left / Super+Shift+Right** (User8/User9) — reorder sessions via `tau-swap-session`
 
@@ -324,6 +325,10 @@ Wrapper for Cmd+G. Checks `TAU_GIT_CMD` — if unset, shows a tmux notification 
 ### tau-popup-editor
 
 Wrapper for Cmd+E. Same pattern as `tau-popup-git` but checks `TAU_EDITOR_CMD`.
+
+### tau-popup-scratch
+
+Toggle persistent scratch shell (Cmd+S). Creates a hidden `@scratch` tmux window in the current session if one doesn't exist. Opens a 90%×90% floating popup connected to it via `display-popup`. Pressing Cmd+S again closes the popup — the shell process and its history survive in the `@scratch` window.
 
 ## Things to Watch
 
