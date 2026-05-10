@@ -1,16 +1,13 @@
 <div align="center">
   <h1>τ</h1>
   <p><em>double your π</em></p>
+  <img src="https://github.com/user-attachments/raw/tau-demo.gif" width="100%">
   <hr>
 </div>
-
-## Philosophy
 
 tau is a preconfigured terminal workspace built on an isolated tmux server. One command gives you sane defaults — vi copy mode, true color, prefix-less key bindings, project sessions, popup overlays — without touching a single dotfile.
 
 It pairs particularly well with [pi](https://github.com/earendil-works/pi) coding agents: `Cmd+A` spawns an agent pane and arranges all panes into a clean grid. But pi is just a feature, not the point. tau works great with any terminal workflow.
-
-## How It Works
 
 ```
 User's terminal (WezTerm or Ghostty — user's config, untouched)
@@ -25,7 +22,18 @@ User's terminal (WezTerm or Ghostty — user's config, untouched)
 
 tau lives entirely in its own directory. The tmux config is loaded via `-f`, terminal settings are reference snippets you copy into your own config. No config files are modified — fork-and-modify is the only workflow.
 
-## Quick Start
+## 📦 Requirements
+
+| Component | Minimum Version |
+|-----------|----------------|
+| WezTerm or Ghostty | latest stable |
+| tmux | 3.6+ |
+| fzf | latest |
+| pi *(optional)* | latest |
+
+Your terminal needs kitty keyboard protocol, true color support, and zero padding. See [terminals/](terminals/) for setup instructions.
+
+## ⚡ Quick Start
 
 ```bash
 # 1. Install tau
@@ -54,18 +62,8 @@ Want coding agent integration? Install [pi](https://github.com/earendil-works/pi
 | `TAU_GIT_CMD` | no | — | Command launched by `Cmd+G` in a floating popup. Shows a tmux notification if unset. |
 | `TAU_AGENT_CMD` | no | `pi` | Command spawned by `Cmd+A` in grid layout. Defaults to `pi`. |
 
-## Requirements
 
-| Component | Minimum Version |
-|-----------|----------------|
-| WezTerm or Ghostty | latest stable |
-| tmux | 3.6+ |
-| fzf | latest |
-| pi *(optional)* | latest |
-
-Your terminal needs kitty keyboard protocol, true color support, and zero padding. See [terminals/](terminals/) for setup instructions.
-
-## Key Bindings
+## ⌨️ Key Bindings
 
 ### Window Management
 
@@ -146,10 +144,6 @@ This gives you seamless <code>Ctrl+H/J/K/L</code> movement across Neovim splits 
 
 </details>
 
-## Customization
+## 🎨 Customization
 
-Edit `config/tmux.conf` in the repo directly. No symlinks, no overlays, no backup/restore. Terminal emulator settings are in `terminals/` as reference snippets — copy what you need into your own config.
-
-## Theme
-
-Everything uses **Tokyo Night Moon** with matching true-color hex codes across WezTerm/Ghostty, tmux, and Neovim.
+Edit `config/tmux.conf` in the repo directly. No symlinks, no overlays, no backup/restore. Terminal emulator settings are in `terminals/` as reference snippets — copy what you need into your own config. The default theme is **Tokyo Night Moon** with matching true-color hex codes across WezTerm/Ghostty, tmux, and Neovim.
