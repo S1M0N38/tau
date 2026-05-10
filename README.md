@@ -1,7 +1,8 @@
+
 <div align="center">
   <h1>τ</h1>
+  <img width="640" height="396" alt="tau" src="https://github.com/user-attachments/assets/73d6f22a-4bab-4bc7-82fe-9d2cb8436a4b" />
   <p><em>double your π</em></p>
-  <img src="https://github.com/user-attachments/raw/tau-demo.gif" width="100%">
   <hr>
 </div>
 
