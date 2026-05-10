@@ -23,8 +23,6 @@ For the best experience, your terminal needs:
 
 Pick your terminal:
 
-- [WezTerm](wezterm.lua) — copy into your `wezterm.lua`
+- [WezTerm](wezterm.lua) — copy into your `wezterm.lua`  *(recommended — best Cmd key support)*
 - [Ghostty](ghostty) — copy into `~/.config/ghostty/config`
-- [kitty](kitty.conf) — copy into `~/.config/kitty/kitty.conf`
 
-> **Note for kitty users**: kitty on macOS cannot use the Cmd (⌘) key for key bindings — the OS intercepts it. The kitty config uses Ctrl+Shift as an alternative modifier. Adjust to your preference.
