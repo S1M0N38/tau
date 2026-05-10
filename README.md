@@ -6,9 +6,9 @@
 
 ## Philosophy
 
-One agent is never enough. A single pi session is powerful — but real work means juggling projects, switching contexts, keeping multiple conversations alive. tau gives each project its own session, each agent its own pane, and lets you move between them without friction.
+tau is a preconfigured terminal workspace built on an isolated tmux server. One command gives you sane defaults — vi copy mode, true color, prefix-less key bindings, project sessions, popup overlays — without touching a single dotfile.
 
-tau doesn't touch your config. No dotfile surgery, no backup rituals, no "let me restore my tmux after this." It runs an isolated tmux server with its own socket and its own config — completely independent from anything else on your system. Start it, use it, kill it. Your terminal and tmux setup stays pristine.
+It pairs particularly well with [pi](https://github.com/mariozechner/pi-mono) coding agents: `Cmd+A` spawns an agent pane and arranges all panes into a clean grid. But pi is just a feature, not the point. tau works great with any terminal workflow.
 
 ## How It Works
 
@@ -28,23 +28,22 @@ tau lives entirely in its own directory. The tmux config is loaded via `-f`, ter
 ## Quick Start
 
 ```bash
-# 1. Install dependencies
-npm install -g @mariozechner/pi-coding-agent
-
-# 2. Install tau
+# 1. Install tau
 git clone https://github.com/S1M0N38/tau.git ~/Developer/tau
 ln -s ~/Developer/tau/bin/tau ~/.local/bin/tau
 
-# 3. Configure environment variables
+# 2. Configure environment variables
 export TAU_PROJECT_DIR=~/Developer          # required — tau won't start without it
 export TAU_EDITOR_CMD="env NVIM_APPNAME=lazyvim nvim"  # optional — for Cmd+E popup
 export TAU_GIT_CMD=lazygit                 # optional — for Cmd+G popup
 
-# 4. Start
+# 3. Start
 tau
 ```
 
 That's it. Run `tau` from a plain terminal — it attaches to an existing server or starts a new one.
+
+Want coding agent integration? Install [pi](https://github.com/mariozechner/pi-mono) (`npm install -g @mariozechner/pi-coding-agent`) and `Cmd+A` will spawn agent panes in a grid layout.
 
 ### Environment Variables
 
@@ -61,8 +60,8 @@ That's it. Run `tau` from a plain terminal — it attaches to an existing server
 |-----------|----------------|
 | WezTerm or Ghostty | latest stable |
 | tmux | 3.6+ |
-| pi | latest |
 | fzf | latest |
+| pi *(optional)* | latest |
 
 Your terminal needs kitty keyboard protocol, true color support, and zero padding. See [terminals/](terminals/) for setup instructions.
 
