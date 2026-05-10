@@ -35,11 +35,24 @@ npm install -g @mariozechner/pi-coding-agent
 git clone https://github.com/S1M0N38/tau.git ~/Developer/tau
 ln -s ~/Developer/tau/bin/tau ~/.local/bin/tau
 
-# 3. Start
+# 3. Configure environment variables
+export TAU_PROJECT_DIR=~/Developer          # required — tau won't start without it
+export TAU_EDITOR_CMD="env NVIM_APPNAME=lazyvim nvim"  # optional — for Cmd+E popup
+export TAU_GIT_CMD=lazygit                 # optional — for Cmd+G popup
+
+# 4. Start
 tau
 ```
 
 That's it. Run `tau` from a plain terminal — it attaches to an existing server or starts a new one.
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `TAU_PROJECT_DIR` | **yes** | — | Directory containing your projects. tau refuses to start if unset or missing. Used by the sessionizer (`Prefix+f`). |
+| `TAU_EDITOR_CMD` | no | — | Command launched by `Cmd+E` in a floating popup. Shows a tmux notification if unset. |
+| `TAU_GIT_CMD` | no | — | Command launched by `Cmd+G` in a floating popup. Shows a tmux notification if unset. |
 
 ## Requirements
 
@@ -69,7 +82,7 @@ Your terminal needs kitty keyboard protocol, true color support, and zero paddin
 |-----|--------|
 | `Cmd+Shift+H` / `Cmd+Shift+L` | Previous / next session |
 | `Super+Shift+←` / `Super+Shift+→` | Reorder session left / right |
-| `Prefix+f` | Sessionizer — fzf popup to pick/create a project from `~/Developer` |
+| `Prefix+f` | Sessionizer — fzf popup to pick/create a project from `$TAU_PROJECT_DIR` |
 
 ### Pane Management
 
