@@ -30,7 +30,9 @@ OUTER_KEY_CONF="${TMPDIR:-/tmp}/tau-outer-key-${type}.conf"
 _current_session=$(tmux display-message -p '#{session_name}' 2>/dev/null || true)
 if [[ "$_current_session" == _popup_${type}_* ]]; then
     # Restore this type's user-key on the outer server
-    [[ -f "$OUTER_KEY_CONF" ]] && tmux -L "$TAU_SOCKET" source-file "$OUTER_KEY_CONF" 2>/dev/null || true
+    if [[ -f "$OUTER_KEY_CONF" ]]; then
+        tmux -L "$TAU_SOCKET" source-file "$OUTER_KEY_CONF" 2>/dev/null || true
+    fi
     tmux detach-client >/dev/null
     exit 0
 fi
@@ -66,5 +68,7 @@ tmux -L "$TAU_SOCKET" display-popup \
     "tmux -L $TAU_POPUP_SOCKET attach -t $popup_session"
 
 # Popup closed — restore user-key
-[[ -f "$OUTER_KEY_CONF" ]] && tmux -L "$TAU_SOCKET" source-file "$OUTER_KEY_CONF" 2>/dev/null || true
+if [[ -f "$OUTER_KEY_CONF" ]]; then
+    tmux -L "$TAU_SOCKET" source-file "$OUTER_KEY_CONF" 2>/dev/null || true
+fi
 rm -f "$OUTER_KEY_CONF"
