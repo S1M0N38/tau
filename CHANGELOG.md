@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/S1M0N38/tau/compare/v1.1.0...v1.2.0) (2026-05-12)
+
+
+### Features
+
+* **scripts:** persistent toggleable popups with dedicated server ([ea5c993](https://github.com/S1M0N38/tau/commit/ea5c993b9177393b55154669d2fd54a38b1e933c))
+
+
+### Bug Fixes
+
+* **scripts:** resolve shellcheck SC2015 in tau-toggle-popup ([fb253a4](https://github.com/S1M0N38/tau/commit/fb253a45942f0e6d6487c0f40916528ebaf8ae34))
+
 ## [1.1.0](https://github.com/S1M0N38/tau/compare/v1.0.0...v1.1.0) (2026-05-10)
 
 
