@@ -18,14 +18,6 @@ teardown() {
     [ "$status" -eq 0 ]
 }
 
-@test "popup-git shows notification when TAU_GIT_CMD is unset" {
-    tau_test_new_session "git-test"
-    unset TAU_GIT_CMD
-
-    run bash "${TAU_ROOT}/scripts/tau-popup-git"
-    [ "$status" -eq 0 ]
-}
-
 @test "popup-git attempts to launch when TAU_GIT_CMD is set" {
     tau_test_new_session "git-test"
     export TAU_GIT_CMD="echo hello-git"

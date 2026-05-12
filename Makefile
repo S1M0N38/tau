@@ -10,6 +10,11 @@ lint:
 	shellcheck bin/tau scripts/* lib/*.sh
 
 test:
-	bats tests/
+	@if [ -n "$${TMUX:-}" ]; then \
+		echo "Warning: running inside tmux/tau — skipping tests that require an external terminal" >&2; \
+		bats tests/ --filter-tags '!tmux:external'; \
+	else \
+		bats tests/; \
+	fi
 
 check: lint test

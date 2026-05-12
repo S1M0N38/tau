@@ -82,6 +82,18 @@ echo 'export PATH="$HOME/Developer/tau/bin:$PATH"' >> ~/.bashrc
 
 Or use `make install` / `make uninstall`.
 
+## Running Tests
+
+```bash
+# From outside tmux — runs everything
+make test
+
+# From inside tau/tmux — skip tests that need an external terminal
+bats tests/ --filter-tags '!tmux:external'
+```
+
+Some tests are tagged `tmux:external` because they require an attached tmux client via `script(1)`, which doesn't work when already running inside tmux. The `Makefile` `test` target auto-detects this and filters them out, but when running `bats` directly inside tau you must add the filter yourself.
+
 ## The `tau` Command
 
 `bin/tau` is a single script that:

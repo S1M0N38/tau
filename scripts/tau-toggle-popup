@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# tau-toggle-popup — toggle a persistent popup on/off
+# Usage: tau-toggle-popup <type> <command> [width] [height]
+#
+# Per-type user-keys removal: when opening popup type X, only user-keys[X]
+# is removed from the outer tmux. Other types keep their keys registered,
+# so their escape sequences are intercepted and discarded by the outer tmux
+# (root bindings don't fire during popup). This provides cross-type isolation:
+# Cmd+E cannot close a git popup, only Cmd+G can.
+
+set -euo pipefail
+
+source "${TAU_ROOT}/lib/common.sh"
+
+type="$1"
+cmd="$2"
+width="${3:-90%}"
+height="${4:-90%}"
+
+case "$type" in
+    git)     USER_KEY_IDX=28; USER_KEY_SEQ='\033[43;9~' ;;
+    editor)  USER_KEY_IDX=29; USER_KEY_SEQ='\033[44;9~' ;;
+    scratch) USER_KEY_IDX=30; USER_KEY_SEQ='\033[45;9~' ;;
+    *)       echo "tau-toggle-popup: unknown type '$type'" >&2; exit 1 ;;
+esac
+
+OUTER_KEY_CONF="${TMPDIR:-/tmp}/tau-outer-key-${type}.conf"
+
+# --- Close path: inside popup session, detach to close ---
+_current_session=$(tmux display-message -p '#{session_name}' 2>/dev/null || true)
+if [[ "$_current_session" == _popup_${type}_* ]]; then
+    # Restore this type's user-key on the outer server
+    [[ -f "$OUTER_KEY_CONF" ]] && tmux -L "$TAU_SOCKET" source-file "$OUTER_KEY_CONF" 2>/dev/null || true
+    tmux detach-client >/dev/null
+    exit 0
+fi
+# Inside a popup but wrong type — ignore
+[[ "$_current_session" == _popup_* ]] && exit 0
+
+# --- Open path ---
+session=$(tau_current_session)
+popup_session=$(tau_popup_session_name "$type" "$session")
+tau_ensure_popup_server
+
+pane_dir=$(tmux -L "$TAU_SOCKET" display-message -p '#{pane_current_path}')
+
+# Save config for restoring this type's user-key on close
+cat > "$OUTER_KEY_CONF" << TMUXCONF
+set-option -s user-keys[${USER_KEY_IDX}] "${USER_KEY_SEQ}"
+bind-key -n User${USER_KEY_IDX} run-shell -b "$TAU_ROOT/scripts/tau-popup-${type}"
+TMUXCONF
+
+# Remove only this type's user-key from outer — other types stay protected
+tmux -L "$TAU_SOCKET" set-option -u "user-keys[${USER_KEY_IDX}]" 2>/dev/null || true
+tmux -L "$TAU_SOCKET" unbind-key -n "User${USER_KEY_IDX}" 2>/dev/null || true
+
+# Create persistent popup session if needed
+if ! tmux -L "$TAU_POPUP_SOCKET" has-session -t "=$popup_session" 2>/dev/null; then
+    tmux -L "$TAU_POPUP_SOCKET" new-session -d -s "$popup_session" \
+        -c "$pane_dir" -- "$cmd"
+fi
+
+# -E auto-closes popup when inner attach exits (toggle detach or program quit)
+tmux -L "$TAU_SOCKET" display-popup \
+    -w "$width" -h "$height" -E \
+    "tmux -L $TAU_POPUP_SOCKET attach -t $popup_session"
+
+# Popup closed — restore user-key
+[[ -f "$OUTER_KEY_CONF" ]] && tmux -L "$TAU_SOCKET" source-file "$OUTER_KEY_CONF" 2>/dev/null || true
+rm -f "$OUTER_KEY_CONF"
