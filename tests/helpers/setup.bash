@@ -10,10 +10,11 @@ TAU_ROOT="$(cd "${BATS_TEST_DIRNAME}/.." && pwd)"
 # Source lib/common.sh first (defines functions, sets TAU_SOCKET to default "tau").
 source "${TAU_ROOT}/lib/common.sh"
 
-# NOW override to a dedicated test socket — never touches the user's real tau server.
-# common.sh uses ${TAU_SOCKET:-tau} so this override is respected by the functions
-# AND by child scripts (via the exported env var).
+# NOW override to dedicated test sockets — never touches the user's real tau servers.
+# common.sh uses ${TAU_SOCKET:-tau} and ${TAU_POPUP_SOCKET:-tau-popup},
+# so these overrides are respected by the functions AND by child scripts.
 export TAU_SOCKET="tau-test"
+export TAU_POPUP_SOCKET="tau-popup-test"
 
 # ── helpers ──────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ tau_test_new_session() {
 
 tau_test_kill_server() {
     tmux -L "$TAU_SOCKET" kill-server 2>/dev/null || true
+    tmux -L "$TAU_POPUP_SOCKET" kill-server 2>/dev/null || true
 }
 
 # Create N numbered sessions: s1, s2, s3 …

@@ -11,6 +11,7 @@ teardown() {
     tau_test_kill_server
 }
 
+# bats test_tags=tmux:external
 @test "swap next exchanges current with next session" {
     tau_test_new_session "a"
     tau_test_new_session "b"
@@ -32,6 +33,7 @@ teardown() {
     [ "$idx_c" = "3" ]
 }
 
+# bats test_tags=tmux:external
 @test "swap prev exchanges current with previous session" {
     tau_test_new_session "x"
     tau_test_new_session "y"
@@ -50,6 +52,7 @@ teardown() {
     [ "$idx_y" = "3" ]
 }
 
+# bats test_tags=tmux:external
 @test "swap next at boundary does nothing" {
     tau_test_new_session "first"
     tau_test_new_session "second"
@@ -66,6 +69,7 @@ teardown() {
     [ "$idx_second" = "2" ]
 }
 
+# bats test_tags=tmux:external
 @test "swap prev at boundary does nothing" {
     tau_test_new_session "first"
     tau_test_new_session "second"
@@ -82,6 +86,7 @@ teardown() {
     [ "$idx_second" = "2" ]
 }
 
+# bats test_tags=tmux:external
 @test "swap with single session does nothing" {
     tau_test_new_session "solo"
     tau_test_attach solo

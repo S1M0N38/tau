@@ -11,6 +11,7 @@ teardown() {
     tau_test_kill_server
 }
 
+# bats test_tags=tmux:external
 @test "cycle next wraps from last to first" {
     tau_test_create_sessions 3
     tau_test_attach s3
@@ -22,6 +23,7 @@ teardown() {
     [ "$output" = "s1" ]
 }
 
+# bats test_tags=tmux:external
 @test "cycle prev wraps from first to last" {
     tau_test_create_sessions 3
     tau_test_attach s1
@@ -33,6 +35,7 @@ teardown() {
     [ "$output" = "s3" ]
 }
 
+# bats test_tags=tmux:external
 @test "cycle next goes forward in sort order" {
     tau_test_new_session "c"
     tau_test_new_session "a"
@@ -49,6 +52,7 @@ teardown() {
     [ "$output" = "b" ]
 }
 
+# bats test_tags=tmux:external
 @test "cycle prev goes backward in sort order" {
     tau_test_new_session "c"
     tau_test_new_session "a"
@@ -65,6 +69,7 @@ teardown() {
     [ "$output" = "b" ]
 }
 
+# bats test_tags=tmux:external
 @test "cycle with single session stays on it" {
     tau_test_new_session "only"
     tau_test_attach only
