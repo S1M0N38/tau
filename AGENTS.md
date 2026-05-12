@@ -23,8 +23,8 @@ User's terminal (WezTerm or Ghostty — user's config, untouched)
 - **pi** — runs as a standalone TUI in a tmux pane
 - **`$TAU_ROOT`** — env var exported by `bin/tau`, inherited by tmux and all child processes; used for path resolution in scripts and config
 - **`$TAU_PROJECT_DIR`** — required env var; directory containing your projects. tau refuses to start if unset or missing
-- **`$TAU_EDITOR_CMD`** — optional env var; command launched by Cmd+E popup. Shows tmux notification if unset
-- **`$TAU_GIT_CMD`** — optional env var; command launched by Cmd+G popup. Shows tmux notification if unset
+- **`$TAU_EDITOR_CMD`** — optional env var; command toggled by Cmd+E popup. Shows tmux notification if unset
+- **`$TAU_GIT_CMD`** — optional env var; command toggled by Cmd+G popup. Shows tmux notification if unset
 - **`$TAU_AGENT_CMD`** — optional env var; command spawned by Cmd+A in grid layout (defaults to `pi`)
 
 ## Project Structure
@@ -43,8 +43,10 @@ tau/
 │   ├── tau-cycle-session   # Cycle sessions (Cmd+Shift+H/L)
 │   ├── tau-swap-session    # Reorder sessions (Super+Shift+Left/Right)
 │   ├── tau-spawn-pi        # Spawn pi pane in grid layout
-│   ├── tau-popup-git       # Cmd+G popup (checks TAU_GIT_CMD)
-│   ├── tau-popup-editor    # Cmd+E popup (checks TAU_EDITOR_CMD)
+│   ├── tau-popup-git       # Cmd+G toggle popup (checks TAU_GIT_CMD)
+│   ├── tau-popup-editor    # Cmd+E toggle popup (checks TAU_EDITOR_CMD)
+│   ├── tau-popup-scratch   # Cmd+S toggle popup (scratch shell)
+│   ├── tau-toggle-popup    # Generic popup toggle (open/close logic)
 │   └── tau-session-closed  # session-closed hook: kill server if only hidden sessions remain
 ├── terminals/              # Reference configs for terminal emulators
 │   ├── README.md           # "Copy these settings into your terminal config"
@@ -171,9 +173,9 @@ Loaded via `tmux -L tau -f $TAU_ROOT/config/tmux.conf`. Not symlinked to a syste
 - **Cmd+Shift+H / Cmd+Shift+L** (User2/User3) — cycle sessions via `tau-cycle-session`
 - **Cmd+T** (User4) — new window in current directory
 - **Cmd+A** (User5) — spawn pi pane in grid layout via `tau-spawn-pi`
-- **Cmd+G** (User28) — open `$TAU_GIT_CMD` in a floating popup (90%×90%) via `tau-popup-git`. Shows tmux notification if `TAU_GIT_CMD` is unset
-- **Cmd+E** (User29) — open `$TAU_EDITOR_CMD` in a floating popup (90%×90%) via `tau-popup-editor`. Shows tmux notification if `TAU_EDITOR_CMD` is unset
-- **Cmd+S** (User30) — open a floating scratch shell (90%×90%) via `tau-popup-scratch`
+- **Cmd+G** (User28) — toggle `$TAU_GIT_CMD` in a floating popup (90%×90%) via `tau-popup-git`. Press again to close. Shows tmux notification if `TAU_GIT_CMD` is unset
+- **Cmd+E** (User29) — toggle `$TAU_EDITOR_CMD` in a floating popup (90%×90%) via `tau-popup-editor`. Press again to close. Shows tmux notification if `TAU_EDITOR_CMD` is unset
+- **Cmd+S** (User30) — toggle a floating scratch shell (90%×90%) via `tau-popup-scratch`. Press again to close
 - **Super+Left / Super+Right** (User6/User7) — reorder windows with `swap-window`
 - **Super+Shift+Left / Super+Shift+Right** (User8/User9) — reorder sessions via `tau-swap-session`
 
@@ -266,6 +268,7 @@ Sourced by all scripts in `scripts/`. Provides:
 
 ```bash
 TAU_SOCKET="tau"                  # Socket name for all tmux -L calls
+TAU_POPUP_SOCKET="tau-popup"      # Socket name for the popup tmux server
 
 tau_list_sessions()               # Lists all non-hidden sessions sorted by @sort-index
                                    # Output: <sort-index>|<session-name>
@@ -273,6 +276,11 @@ tau_list_sessions()               # Lists all non-hidden sessions sorted by @sor
                                    # Excludes sessions with @hidden on
 
 tau_current_session()             # Returns current session name
+
+tau_popup_session_name()          # Generates popup session name: _popup_<type>_<session>
+
+tau_ensure_popup_server()         # Ensures popup server is running with toggle key bindings
+                                   # Idempotent — checks for @tau-initialized marker
 ```
 
 ## Scripts
@@ -335,15 +343,32 @@ Panes are assigned in creation order (oldest → top-left, newest → bottom-rig
 
 ### tau-popup-git
 
-Wrapper for Cmd+G. Checks `TAU_GIT_CMD` — if unset, shows a tmux notification and exits. Otherwise launches the command in a 90%×90% floating popup in the current pane's working directory.
+Toggle for Cmd+G. Checks `TAU_GIT_CMD` — if unset, shows a tmux notification and exits. Otherwise delegates to `tau-toggle-popup` which opens a persistent floating popup (90%×90%) running the command. Press Cmd+G again to close.
 
 ### tau-popup-editor
 
-Wrapper for Cmd+E. Same pattern as `tau-popup-git` but checks `TAU_EDITOR_CMD`.
+Toggle for Cmd+E. Same pattern as `tau-popup-git` but checks `TAU_EDITOR_CMD`. Press Cmd+E again to close.
 
 ### tau-popup-scratch
 
-Floating shell popup (Cmd+S). Opens a 90%×90% popup running `$SHELL` in the current pane's working directory. Same pattern as `tau-popup-git` and `tau-popup-editor` but always available (no env var needed).
+Toggle for Cmd+S. Delegates to `tau-toggle-popup` which opens a persistent floating scratch shell (90%×90%). Always available (no env var needed). Press Cmd+S again to close.
+
+### tau-toggle-popup
+
+Generic popup toggle (open/close). Manages a separate tmux server (`TAU_POPUP_SOCKET`) for persistent popup sessions.
+
+**Open path:**
+1. Remove only this type's user-key from the outer tmux server (cross-type isolation: Cmd+E cannot close a git popup)
+2. Create a persistent popup session on `TAU_POPUP_SOCKET` if one doesn't exist
+3. Attach to it via `display-popup -E` (auto-closes when inner attach exits)
+4. Restore the user-key after popup closes
+
+**Close path (toggle):**
+1. Detect popup session by name (`_popup_<type>_*`)
+2. Restore the user-key on the outer server
+3. Detach client (closes the popup)
+
+Popup sessions persist across toggles — the command keeps running in the background. The popup server (`tau-popup`) is separate from the main tau server (`tau`).
 
 ### tau-session-closed
 
@@ -353,4 +378,5 @@ Triggered by the `session-closed` tmux hook. Checks if any visible (non-`@hidden
 
 - **tmux must be fully restarted** (`tmux -L tau kill-server`) after changing `extended-keys` settings — reload (`prefix r`) is not enough
 - **Terminal Ctrl+=/- bindings** are intentionally disabled (WezTerm: `action.Nop`) to prevent the terminal from intercepting zoom shortcuts that tmux or Neovim may use
+- **Popup servers are separate** — popups run on `TAU_POPUP_SOCKET` (default: `tau-popup`), independent from the main `tau` server. Killing the main server does not kill popups
 - **`$TAU_ROOT` must be set** — all scripts depend on it. Always start tau via `bin/tau`, not by manually running `tmux -L tau`

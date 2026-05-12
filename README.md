@@ -59,8 +59,8 @@ Want coding agent integration? Install [pi](https://github.com/earendil-works/pi
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `TAU_PROJECT_DIR` | **yes** | — | Directory containing your projects. tau refuses to start if unset or missing. Used by the sessionizer (`Prefix+f`). |
-| `TAU_EDITOR_CMD` | no | — | Command launched by `Cmd+E` in a floating popup. Shows a tmux notification if unset. |
-| `TAU_GIT_CMD` | no | — | Command launched by `Cmd+G` in a floating popup. Shows a tmux notification if unset. |
+| `TAU_EDITOR_CMD` | no | — | Command toggled by `Cmd+E` in a floating popup. Press again to close. Shows a tmux notification if unset. |
+| `TAU_GIT_CMD` | no | — | Command toggled by `Cmd+G` in a floating popup. Press again to close. Shows a tmux notification if unset. |
 | `TAU_AGENT_CMD` | no | `pi` | Command spawned by `Cmd+A` in grid layout. Defaults to `pi`. |
 
 
@@ -91,8 +91,9 @@ Want coding agent integration? Install [pi](https://github.com/earendil-works/pi
 | `Prefix+\|` | Horizontal split — inherits cwd |
 | `Prefix+-` | Vertical split — inherits cwd |
 | `Cmd+A` | Spawn pi pane in grid layout |
-| `Cmd+G` | Open `$TAU_GIT_CMD` in floating popup |
-| `Cmd+E` | Open `$TAU_EDITOR_CMD` in floating popup |
+| `Cmd+G` | Toggle `$TAU_GIT_CMD` in floating popup |
+| `Cmd+E` | Toggle `$TAU_EDITOR_CMD` in floating popup |
+| `Cmd+S` | Toggle scratch shell in floating popup |
 
 ### Miscellaneous
 
